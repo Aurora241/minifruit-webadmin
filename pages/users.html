@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>MiniFruit — Người dùng</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">🍎</div>
+            <span>MiniFruit</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="display-name">Admin</div>
+                    <div class="user-role" id="display-role">ADMIN</div>
+                </div>
+                <button class="btn-logout" onclick="logout()">⏻</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div class="topbar-title">Người dùng</div>
+            <div class="topbar-actions">
+                <button class="btn btn-primary" onclick="openModal()">+ Thêm người dùng</button>
+            </div>
+        </div>
+        <div class="page-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Danh sách người dùng</div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tên đăng nhập</th>
+                            <th>Họ tên</th>
+                            <th>Vai trò</th>
+                            <th>Chi nhánh</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="users-table">
+                        <tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Đang tải...</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Thêm người dùng</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Tên đăng nhập *</label>
+                    <input class="form-control" id="username" placeholder="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu *</label>
+                    <input class="form-control" type="password" id="password" placeholder="••••••">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Họ tên</label>
+                <input class="form-control" id="full-name" placeholder="Nguyễn Văn A">
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Vai trò *</label>
+                    <select class="form-control" id="role">
+                        <option value="STAFF">STAFF — Nhân viên bán hàng</option>
+                        <option value="WAREHOUSE">WAREHOUSE — Thủ kho</option>
+                        <option value="MANAGER">MANAGER — Quản lý chi nhánh</option>
+                        <option value="ADMIN">ADMIN — Quản trị hệ thống</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chi nhánh</label>
+                    <select class="form-control" id="branch-id">
+                        <option value="">-- Không gán --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
+            <button class="btn btn-primary" onclick="saveUser()">Lưu</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script>
+    requireAuth();
+    buildSidebar();
+    initUser();
+
+    const roleColors = {
+        ADMIN: 'badge-danger', MANAGER: 'badge-warning',
+        STAFF: 'badge-info', WAREHOUSE: 'badge-success'
+    };
+
+    function toast(msg, type = 'success') {
+        const c = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    async function init() {
+        const [users, branches] = await Promise.all([
+            api.get('/users'),
+            api.get('/branches')
+        ]);
+        const sel = document.getElementById('branch-id');
+        (branches || []).forEach(b => {
+            sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
+        });
+        const tbody = document.getElementById('users-table');
+        if (!users?.length) {
+            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><p>Chưa có người dùng</p></div></td></tr>`;
+            return;
+        }
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.userId}</td>
+                <td><strong>${u.username}</strong></td>
+                <td>${u.fullName ?? '—'}</td>
+                <td><span class="badge ${roleColors[u.role?.roleName] ?? 'badge-info'}">${u.role?.roleName ?? '—'}</span></td>
+                <td>${u.branch?.branchName ?? '—'}</td>
+                <td><span class="badge ${u.status ? 'badge-success' : 'badge-danger'}">${u.status ? 'Hoạt động' : 'Ngừng'}</span></td>
+                <td><button class="btn btn-danger btn-sm" onclick="deactivateUser(${u.userId})">🚫 Vô hiệu</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function openModal() { document.getElementById('modal').classList.add('open'); }
+    function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+    async function saveUser() {
+        const body = {
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value,
+            fullName: document.getElementById('full-name').value,
+            role: document.getElementById('role').value,
+            branchId: document.getElementById('branch-id').value || null,
+        };
+        if (!body.username || !body.password) { toast('Vui lòng nhập tên đăng nhập và mật khẩu', 'error'); return; }
+        await api.post('/users', body);
+        toast('Đã thêm người dùng');
+        closeModal();
+        init();
+    }
+
+    async function deactivateUser(id) {
+        if (!confirm('Vô hiệu hóa tài khoản này?')) return;
+        await api.delete(`/users/${id}`);
+        toast('Đã vô hiệu hóa tài khoản');
+        init();
+    }
+
+    init();
+</script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>MiniFruit — Chi nhánh</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">🍎</div>
+            <span>MiniFruit</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="display-name">Admin</div>
+                    <div class="user-role" id="display-role">ADMIN</div>
+                </div>
+                <button class="btn-logout" onclick="logout()">⏻</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div class="topbar-title">Chi nhánh</div>
+            <div class="topbar-actions">
+                <button class="btn btn-primary" onclick="openModal()">+ Thêm chi nhánh</button>
+            </div>
+        </div>
+        <div class="page-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Danh sách chi nhánh</div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tên chi nhánh</th>
+                            <th>Địa chỉ</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="branches-table">
+                        <tr><td colspan="5"><div class="empty-state"><div class="icon">⏳</div><p>Đang tải...</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title" id="modal-title">Thêm chi nhánh</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="branch-id">
+            <div class="form-group">
+                <label class="form-label">Tên chi nhánh *</label>
+                <input class="form-control" id="branch-name" placeholder="VD: Chi nhánh Quận 1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Địa chỉ</label>
+                <input class="form-control" id="branch-address" placeholder="Địa chỉ chi nhánh">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
+            <button class="btn btn-primary" onclick="saveBranch()">Lưu</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script>
+    requireAuth();
+    buildSidebar();
+    initUser();
+
+    let allBranches = [];
+
+    function toast(msg, type = 'success') {
+        const c = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    async function loadBranches() {
+        allBranches = await api.get('/branches') || [];
+        const tbody = document.getElementById('branches-table');
+        if (!allBranches.length) {
+            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📭</div><p>Chưa có chi nhánh nào</p></div></td></tr>`;
+            return;
+        }
+        tbody.innerHTML = allBranches.map(b => `
+            <tr>
+                <td>${b.branchId}</td>
+                <td><strong>${b.branchName}</strong></td>
+                <td>${b.address ?? '—'}</td>
+                <td><span class="badge ${b.status ? 'badge-success' : 'badge-danger'}">${b.status ? 'Hoạt động' : 'Ngừng'}</span></td>
+                <td>
+                    <button class="btn btn-outline btn-sm" onclick="editBranch(${b.branchId})">✏️ Sửa</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteBranch(${b.branchId})">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function openModal(reset = true) {
+        if (reset) {
+            document.getElementById('modal-title').textContent = 'Thêm chi nhánh';
+            document.getElementById('branch-id').value = '';
+            document.getElementById('branch-name').value = '';
+            document.getElementById('branch-address').value = '';
+        }
+        document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('open');
+    }
+
+    function editBranch(id) {
+        const b = allBranches.find(x => x.branchId === id);
+        if (!b) return;
+        document.getElementById('modal-title').textContent = 'Sửa chi nhánh';
+        document.getElementById('branch-id').value = b.branchId;
+        document.getElementById('branch-name').value = b.branchName;
+        document.getElementById('branch-address').value = b.address || '';
+        openModal(false);
+    }
+
+    async function saveBranch() {
+        const id = document.getElementById('branch-id').value;
+        const body = {
+            branchName: document.getElementById('branch-name').value,
+            address: document.getElementById('branch-address').value,
+            status: true
+        };
+        if (!body.branchName) { toast('Vui lòng nhập tên chi nhánh', 'error'); return; }
+        if (id) {
+            await api.put(`/branches/${id}`, body);
+            toast('Đã cập nhật chi nhánh');
+        } else {
+            await api.post('/branches', body);
+            toast('Đã thêm chi nhánh');
+        }
+        closeModal();
+        loadBranches();
+    }
+
+    async function deleteBranch(id) {
+        if (!confirm('Vô hiệu hóa chi nhánh này?')) return;
+        await api.delete(`/branches/${id}`);
+        toast('Đã vô hiệu hóa chi nhánh');
+        loadBranches();
+    }
+
+    loadBranches();
+</script>
+</body>
+</html>

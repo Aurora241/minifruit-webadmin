@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>MiniFruit — Hóa đơn</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">🍎</div>
+            <span>MiniFruit</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="display-name">Admin</div>
+                    <div class="user-role" id="display-role">ADMIN</div>
+                </div>
+                <button class="btn-logout" onclick="logout()">⏻</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div class="topbar-title">Hóa đơn</div>
+            <div class="topbar-actions">
+                <select class="form-control" id="branch-filter" onchange="loadOrders()" style="width:180px">
+                    <option value="">-- Chọn chi nhánh --</option>
+                </select>
+            </div>
+        </div>
+        <div class="page-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Danh sách hóa đơn</div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Chi nhánh</th>
+                            <th>Nhân viên</th>
+                            <th>Tổng tiền</th>
+                            <th>Giảm giá</th>
+                            <th>Thanh toán</th>
+                            <th>Thời gian</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                        </thead>
+                        <tbody id="orders-table">
+                        <tr><td colspan="8"><div class="empty-state"><div class="icon">⏳</div><p>Chọn chi nhánh để xem hóa đơn</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal" style="width:560px">
+        <div class="modal-header">
+            <div class="modal-title">Chi tiết hóa đơn #<span id="detail-id"></span></div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr><th>Sản phẩm</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th></tr>
+                    </thead>
+                    <tbody id="detail-table"></tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px;text-align:right">
+                <div id="detail-total" style="font-size:16px;font-weight:700;color:var(--primary)"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal()">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script>
+    requireAuth();
+    buildSidebar();
+    initUser();
+
+    async function init() {
+        const branches = await api.get('/branches') || [];
+        const sel = document.getElementById('branch-filter');
+        branches.forEach(b => {
+            sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
+        });
+
+        // MANAGER chỉ thấy chi nhánh của mình
+        const user = getUser();
+        if (user.role === 'MANAGER' && user.branchId) {
+            sel.value = user.branchId;
+        } else if (branches.length > 0) {
+            sel.value = branches[0].branchId;
+        }
+        loadOrders();
+    }
+
+    async function loadOrders() {
+        const branchId = document.getElementById('branch-filter').value;
+        if (!branchId) return;
+        const orders = await api.get(`/orders/branch/${branchId}`) || [];
+        const tbody = document.getElementById('orders-table');
+        if (!orders.length) {
+            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📭</div><p>Chưa có hóa đơn</p></div></td></tr>`;
+            return;
+        }
+        tbody.innerHTML = orders.map(o => `
+            <tr>
+                <td>#${o.orderId}</td>
+                <td>${o.branch?.branchName ?? '—'}</td>
+                <td>${o.user?.fullName ?? o.user?.username ?? '—'}</td>
+                <td><strong>${Number(o.totalAmount).toLocaleString('vi-VN')}đ</strong></td>
+                <td>${Number(o.discount).toLocaleString('vi-VN')}đ</td>
+                <td><span class="badge badge-info">${o.paymentMethod ?? 'CASH'}</span></td>
+                <td>${new Date(o.createdAt).toLocaleString('vi-VN')}</td>
+                <td><button class="btn btn-outline btn-sm" onclick="viewDetail(${o.orderId})">👁️ Xem</button></td>
+            </tr>
+        `).join('');
+    }
+
+    async function viewDetail(orderId) {
+        const details = await api.get(`/orders/${orderId}/details`) || [];
+        document.getElementById('detail-id').textContent = orderId;
+        let total = 0;
+        document.getElementById('detail-table').innerHTML = details.map(d => {
+            const sub = d.quantity * d.unitPrice;
+            total += sub;
+            return `<tr>
+                <td>${d.product?.productName ?? '—'}</td>
+                <td>${Number(d.unitPrice).toLocaleString('vi-VN')}đ</td>
+                <td>${d.quantity}</td>
+                <td><strong>${Number(sub).toLocaleString('vi-VN')}đ</strong></td>
+            </tr>`;
+        }).join('');
+        document.getElementById('detail-total').textContent = `Tổng: ${Number(total).toLocaleString('vi-VN')}đ`;
+        document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('open');
+    }
+
+    init();
+</script>
+</body>
+</html>

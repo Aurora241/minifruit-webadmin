@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>MiniFruit — Kho hàng</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">🍎</div>
+            <span>MiniFruit</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="display-name">Admin</div>
+                    <div class="user-role" id="display-role">ADMIN</div>
+                </div>
+                <button class="btn-logout" onclick="logout()">⏻</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div class="topbar-title">Kho hàng</div>
+            <div class="topbar-actions">
+                <select class="form-control" id="branch-filter" onchange="loadStock()" style="width:180px">
+                    <option value="">-- Chọn chi nhánh --</option>
+                </select>
+                <button class="btn btn-primary" onclick="openImportModal()">+ Nhập kho</button>
+            </div>
+        </div>
+        <div class="page-content">
+            <div id="low-stock-section" style="display:none;margin-bottom:16px">
+                <div class="card" style="border-color:#fca5a5">
+                    <div class="card-header" style="background:#fff5f5">
+                        <div class="card-title">⚠️ Sản phẩm sắp hết hàng</div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Sản phẩm</th><th>Tồn kho</th><th>Ngưỡng tối thiểu</th></tr></thead>
+                            <tbody id="low-stock-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Tồn kho hiện tại</div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>SKU</th>
+                            <th>Tồn kho</th>
+                            <th>Ngưỡng tối thiểu</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                        </thead>
+                        <tbody id="stock-table">
+                        <tr><td colspan="5"><div class="empty-state"><div class="icon">⏳</div><p>Chọn chi nhánh để xem tồn kho</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="import-modal">
+    <div class="modal" style="width:540px">
+        <div class="modal-header">
+            <div class="modal-title">Nhập kho</div>
+            <button class="modal-close" onclick="closeImportModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Ghi chú</label>
+                <input class="form-control" id="import-note" placeholder="VD: Nhập hàng đầu tháng">
+            </div>
+            <div id="import-items">
+                <div class="import-item" style="display:flex;gap:8px;margin-bottom:8px">
+                    <select class="form-control" style="flex:2">
+                        <option value="">-- Chọn sản phẩm --</option>
+                    </select>
+                    <input class="form-control" type="number" placeholder="Số lượng" style="width:90px" min="1">
+                    <button class="btn btn-danger btn-sm" onclick="removeItem(this)">✕</button>
+                </div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="addImportItem()" style="margin-top:8px">+ Thêm sản phẩm</button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeImportModal()">Hủy</button>
+            <button class="btn btn-primary" onclick="submitImport()">Nhập kho</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script>
+    requireAuth();
+    buildSidebar();
+    initUser();
+
+    let allProducts = [];
+
+    function toast(msg, type = 'success') {
+        const c = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    async function init() {
+        const [branches, products] = await Promise.all([
+            api.get('/branches'),
+            api.get('/products')
+        ]);
+        allProducts = products || [];
+        const sel = document.getElementById('branch-filter');
+        (branches || []).forEach(b => {
+            sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
+        });
+        populateProductSelects();
+        if (branches?.length > 0) {
+            sel.value = branches[0].branchId;
+            loadStock();
+        }
+    }
+
+    function populateProductSelects() {
+        document.querySelectorAll('.import-item select').forEach(sel => {
+            sel.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+            allProducts.forEach(p => {
+                sel.innerHTML += `<option value="${p.productId}">${p.productName}</option>`;
+            });
+        });
+    }
+
+    async function loadStock() {
+        const branchId = document.getElementById('branch-filter').value;
+        if (!branchId) return;
+        const [stock, lowStock] = await Promise.all([
+            api.get(`/inventory/stock/${branchId}`),
+            api.get(`/inventory/low-stock/${branchId}`)
+        ]);
+
+        const tbody = document.getElementById('stock-table');
+        if (!stock?.length) {
+            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📭</div><p>Chưa có hàng trong kho</p></div></td></tr>`;
+        } else {
+            tbody.innerHTML = stock.map(s => `
+                <tr>
+                    <td><strong>${s.product?.productName ?? '—'}</strong></td>
+                    <td><code>${s.product?.sku ?? '—'}</code></td>
+                    <td><strong style="color:${s.currentStock <= s.minStock ? 'var(--danger)' : 'var(--primary)'}">${s.currentStock}</strong></td>
+                    <td>${s.minStock}</td>
+                    <td><span class="badge ${s.currentStock <= s.minStock ? 'badge-danger' : 'badge-success'}">
+                        ${s.currentStock <= s.minStock ? '⚠️ Sắp hết' : '✅ Đủ hàng'}
+                    </span></td>
+                </tr>
+            `).join('');
+        }
+
+        const section = document.getElementById('low-stock-section');
+        if (lowStock?.length > 0) {
+            section.style.display = 'block';
+            document.getElementById('low-stock-table').innerHTML = lowStock.map(s => `
+                <tr>
+                    <td>${s.product?.productName ?? '—'}</td>
+                    <td style="color:var(--danger);font-weight:700">${s.currentStock}</td>
+                    <td>${s.minStock}</td>
+                </tr>
+            `).join('');
+        } else {
+            section.style.display = 'none';
+        }
+    }
+
+    function openImportModal() {
+        const branchId = document.getElementById('branch-filter').value;
+        if (!branchId) { toast('Vui lòng chọn chi nhánh trước', 'error'); return; }
+        document.getElementById('import-modal').classList.add('open');
+    }
+
+    function closeImportModal() {
+        document.getElementById('import-modal').classList.remove('open');
+    }
+
+    function addImportItem() {
+        const opts = allProducts.map(p => `<option value="${p.productId}">${p.productName}</option>`).join('');
+        const div = document.createElement('div');
+        div.className = 'import-item';
+        div.style = 'display:flex;gap:8px;margin-bottom:8px';
+        div.innerHTML = `
+            <select class="form-control" style="flex:2">
+                <option value="">-- Chọn sản phẩm --</option>${opts}
+            </select>
+            <input class="form-control" type="number" placeholder="Số lượng" style="width:90px" min="1">
+            <button class="btn btn-danger btn-sm" onclick="removeItem(this)">✕</button>
+        `;
+        document.getElementById('import-items').appendChild(div);
+    }
+
+    function removeItem(btn) {
+        const items = document.querySelectorAll('.import-item');
+        if (items.length > 1) btn.parentElement.remove();
+    }
+
+    async function submitImport() {
+        const branchId = document.getElementById('branch-filter').value;
+        const items = [];
+        document.querySelectorAll('.import-item').forEach(row => {
+            const productId = row.querySelector('select').value;
+            const quantity = row.querySelector('input').value;
+            if (productId && quantity > 0) items.push({ productId: parseInt(productId), quantity: parseInt(quantity) });
+        });
+        if (!items.length) { toast('Vui lòng chọn ít nhất 1 sản phẩm', 'error'); return; }
+
+        await api.post('/inventory/import', {
+            branchId: parseInt(branchId),
+            userId: 1,
+            note: document.getElementById('import-note').value,
+            items
+        });
+        toast('Nhập kho thành công!');
+        closeImportModal();
+        loadStock();
+    }
+
+    init();
+</script>
+</body>
+</html>
