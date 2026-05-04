@@ -1,3 +1,4 @@
+/* v2 */
 const BASE_URL = 'https://minifruit-backend-production-f318.up.railway.app/api';
 function getToken() {
     return localStorage.getItem('token');
