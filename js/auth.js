@@ -14,20 +14,17 @@ function getUser() {
 }
 
 function getIndexPath() {
-    const depth = window.location.pathname.split('/').length - 2;
-    return depth > 1 ? '../'.repeat(depth - 1) + 'index.html' : './index.html';
+    return '/index.html';
 }
 
 function logout() {
-    const loginUrl = localStorage.getItem('loginUrl') || './index.html';
     localStorage.clear();
-    window.location.href = loginUrl;
+    window.location.href = '/index.html';
 }
 
 function requireAuth() {
     if (!localStorage.getItem('token')) {
-        const loginUrl = localStorage.getItem('loginUrl') || './index.html';
-        window.location.href = loginUrl;
+        window.location.href = '/index.html';
     }
 }
 

@@ -5,8 +5,7 @@ function getToken() {
 }
 
 function getIndexPath() {
-    const depth = window.location.pathname.split('/').length - 2;
-    return depth > 1 ? '../'.repeat(depth - 1) + 'index.html' : './index.html';
+    return '/index.html';
 }
 
 async function request(method, path, body = null) {
