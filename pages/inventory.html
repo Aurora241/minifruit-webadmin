@@ -2,8 +2,9 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Kho hàng</title>
-    <link rel="stylesheet" href="../css/style.css?v=4">
+    <link rel="stylesheet" href="../css/style.css?v=5">
 </head>
 <body>
 <div class="app-layout">
@@ -106,8 +107,8 @@
 
 <div class="toast-container" id="toasts"></div>
 
-<script src="../js/auth.js?v=3"></script>
-<script src="../js/api.js?v=3"></script>
+<script src="../js/auth.js?v=5"></script>
+<script src="../js/api.js?v=5"></script>
 <script>
     requireAuth();
     buildSidebar();
@@ -135,10 +136,15 @@
             sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
         });
         populateProductSelects();
-        if (branches?.length > 0) {
+
+        // Auto-chọn chi nhánh theo role
+        const user = getUser();
+        if (user.role === 'MANAGER' && user.branchId) {
+            sel.value = user.branchId;
+        } else if (branches?.length > 0) {
             sel.value = branches[0].branchId;
-            loadStock();
         }
+        loadStock();
     }
 
     function populateProductSelects() {
@@ -222,6 +228,7 @@
 
     async function submitImport() {
         const branchId = document.getElementById('branch-filter').value;
+        const user = getUser();
         const items = [];
         document.querySelectorAll('.import-item').forEach(row => {
             const productId = row.querySelector('select').value;
@@ -230,15 +237,18 @@
         });
         if (!items.length) { toast('Vui lòng chọn ít nhất 1 sản phẩm', 'error'); return; }
 
-        await api.post('/inventory/import', {
+        const result = await api.post('/inventory/import', {
             branchId: parseInt(branchId),
-            userId: 1,
             note: document.getElementById('import-note').value,
             items
         });
-        toast('Nhập kho thành công!');
-        closeImportModal();
-        loadStock();
+        if (result) {
+            toast('Nhập kho thành công!');
+            closeImportModal();
+            loadStock();
+        } else {
+            toast('Nhập kho thất bại, vui lòng thử lại', 'error');
+        }
     }
 
     init();
