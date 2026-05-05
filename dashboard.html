@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Dashboard</title>
-    <link rel="stylesheet" href="css/style.css?v=5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">🍎</div>
             <span>MiniFruit</span>
+            <span class="logo-badge">v6</span>
         </div>
         <nav class="sidebar-nav" id="sidebar-nav"></nav>
         <div class="sidebar-footer">
@@ -28,59 +32,93 @@
 
     <div class="main-content">
         <div class="topbar">
-            <div class="topbar-title">Dashboard</div>
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">Dashboard</div>
+            </div>
+            <div class="topbar-actions">
+                <span id="topbar-date" style="font-size:12.5px;color:var(--text-muted)"></span>
+            </div>
         </div>
+
         <div class="page-content">
+            <!-- Stat cards -->
             <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon green">🛒</div>
-                    <div>
-                        <div class="stat-value" id="stat-products">—</div>
-                        <div class="stat-label">Sản phẩm</div>
+                <div class="stat-card green">
+                    <div class="stat-card-body">
+                        <div class="stat-icon green">🛒</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-products">—</div>
+                            <div class="stat-label">Sản phẩm</div>
+                        </div>
                     </div>
+                    <div class="stat-footer">Tổng sản phẩm trong hệ thống</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon blue">🏪</div>
-                    <div>
-                        <div class="stat-value" id="stat-branches">—</div>
-                        <div class="stat-label">Chi nhánh</div>
+
+                <div class="stat-card blue">
+                    <div class="stat-card-body">
+                        <div class="stat-icon blue">🏪</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-branches">—</div>
+                            <div class="stat-label">Chi nhánh</div>
+                        </div>
                     </div>
+                    <div class="stat-footer">Chi nhánh đang hoạt động</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon amber">👥</div>
-                    <div>
-                        <div class="stat-value" id="stat-users">—</div>
-                        <div class="stat-label">Người dùng</div>
+
+                <div class="stat-card amber">
+                    <div class="stat-card-body">
+                        <div class="stat-icon amber">👥</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-users">—</div>
+                            <div class="stat-label">Người dùng</div>
+                        </div>
                     </div>
+                    <div class="stat-footer">Tài khoản trong hệ thống</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon red">⚠️</div>
-                    <div>
-                        <div class="stat-value" id="stat-lowstock">—</div>
-                        <div class="stat-label">Sắp hết hàng</div>
+
+                <div class="stat-card red">
+                    <div class="stat-card-body">
+                        <div class="stat-icon red">⚠️</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="stat-lowstock">—</div>
+                            <div class="stat-label">Sắp hết hàng</div>
+                        </div>
                     </div>
+                    <div class="stat-footer">Sản phẩm dưới ngưỡng tối thiểu</div>
                 </div>
             </div>
 
+            <!-- Recent orders -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">🧾 Hóa đơn gần đây</div>
-                    <a href="pages/orders.html" class="btn btn-outline btn-sm">Xem tất cả</a>
+                    <div class="card-title">
+                        <span class="card-icon">🧾</span>
+                        Hóa đơn gần đây
+                    </div>
+                    <a href="pages/orders.html" class="btn btn-outline btn-sm">Xem tất cả →</a>
                 </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Chi nhánh</th>
-                            <th>Nhân viên</th>
-                            <th>Tổng tiền</th>
-                            <th>Thanh toán</th>
-                            <th>Thời gian</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Chi nhánh</th>
+                                <th>Nhân viên</th>
+                                <th>Tổng tiền</th>
+                                <th>Thanh toán</th>
+                                <th>Thời gian</th>
+                            </tr>
                         </thead>
                         <tbody id="orders-table">
-                        <tr><td colspan="6"><div class="empty-state"><div class="icon">⏳</div><p>Đang tải...</p></div></td></tr>
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <span class="icon">⏳</span>
+                                        <p>Đang tải dữ liệu...</p>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -96,6 +134,23 @@
     buildSidebar();
     initUser();
 
+    // Show current date
+    const now = new Date();
+    document.getElementById('topbar-date').textContent =
+        now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    // Mobile sidebar
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+
+    const paymentLabel = { CASH: 'Tiền mặt', CARD: 'Thẻ', TRANSFER: 'CK' };
+
     async function loadDashboard() {
         const [products, branches, users] = await Promise.all([
             api.get('/products'),
@@ -104,26 +159,31 @@
         ]);
         document.getElementById('stat-products').textContent = products?.length ?? 0;
         document.getElementById('stat-branches').textContent = branches?.length ?? 0;
-        document.getElementById('stat-users').textContent = users?.length ?? 0;
+        document.getElementById('stat-users').textContent    = users?.length ?? 0;
 
         if (branches?.length > 0) {
             const lowStock = await api.get(`/inventory/low-stock/${branches[0].branchId}`);
-            document.getElementById('stat-lowstock').textContent = lowStock?.length ?? 0;
+            const lowCount = lowStock?.length ?? 0;
+            const lowEl = document.getElementById('stat-lowstock');
+            lowEl.textContent = lowCount;
+            if (lowCount > 0) lowEl.style.color = 'var(--danger)';
 
             const orders = await api.get(`/orders/branch/${branches[0].branchId}`);
             const tbody = document.getElementById('orders-table');
+
             if (!orders?.length) {
-                tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">📭</div><p>Chưa có hóa đơn</p></div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Chưa có hóa đơn</div><p>Hóa đơn sẽ xuất hiện ở đây sau khi có giao dịch.</p></div></td></tr>`;
                 return;
             }
+
             tbody.innerHTML = orders.slice(0, 8).map(o => `
                 <tr>
-                    <td>#${o.orderId}</td>
+                    <td><span class="code-chip">#${o.orderId}</span></td>
                     <td>${o.branch?.branchName ?? '—'}</td>
                     <td>${o.user?.fullName ?? o.user?.username ?? '—'}</td>
-                    <td><strong>${Number(o.totalAmount).toLocaleString('vi-VN')}đ</strong></td>
-                    <td><span class="badge badge-info">${o.paymentMethod ?? 'CASH'}</span></td>
-                    <td>${new Date(o.createdAt).toLocaleString('vi-VN')}</td>
+                    <td><strong style="color:var(--primary)">${Number(o.totalAmount).toLocaleString('vi-VN')}đ</strong></td>
+                    <td><span class="badge badge-info badge-flat">${paymentLabel[o.paymentMethod] ?? o.paymentMethod ?? 'CASH'}</span></td>
+                    <td style="color:var(--text-muted);font-size:12.5px">${new Date(o.createdAt).toLocaleString('vi-VN')}</td>
                 </tr>
             `).join('');
         }

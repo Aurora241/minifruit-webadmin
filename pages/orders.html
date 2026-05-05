@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Hóa đơn</title>
-    <link rel="stylesheet" href="../css/style.css?v=5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="../css/style.css?v=6">
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">🍎</div>
             <span>MiniFruit</span>
+            <span class="logo-badge">v6</span>
         </div>
         <nav class="sidebar-nav" id="sidebar-nav"></nav>
         <div class="sidebar-footer">
@@ -28,34 +32,49 @@
 
     <div class="main-content">
         <div class="topbar">
-            <div class="topbar-title">Hóa đơn</div>
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">Hóa đơn</div>
+            </div>
             <div class="topbar-actions">
-                <select class="form-control" id="branch-filter" onchange="loadOrders()" style="width:180px">
+                <select class="form-control" id="branch-filter" onchange="loadOrders()" style="width:200px">
                     <option value="">-- Chọn chi nhánh --</option>
                 </select>
             </div>
         </div>
+
         <div class="page-content">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">Danh sách hóa đơn</div>
+                    <div class="card-title">
+                        <span class="card-icon">🧾</span>
+                        Danh sách hóa đơn
+                    </div>
+                    <span id="orders-count" style="font-size:12.5px;color:var(--text-muted)"></span>
                 </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Chi nhánh</th>
-                            <th>Nhân viên</th>
-                            <th>Tổng tiền</th>
-                            <th>Giảm giá</th>
-                            <th>Thanh toán</th>
-                            <th>Thời gian</th>
-                            <th>Chi tiết</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Chi nhánh</th>
+                                <th>Nhân viên</th>
+                                <th>Tổng tiền</th>
+                                <th>Giảm giá</th>
+                                <th>Thanh toán</th>
+                                <th>Thời gian</th>
+                                <th></th>
+                            </tr>
                         </thead>
                         <tbody id="orders-table">
-                        <tr><td colspan="8"><div class="empty-state"><div class="icon">⏳</div><p>Chọn chi nhánh để xem hóa đơn</p></div></td></tr>
+                            <tr>
+                                <td colspan="8">
+                                    <div class="empty-state">
+                                        <span class="icon">⏳</span>
+                                        <p>Chọn chi nhánh để xem hóa đơn</p>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -64,23 +83,31 @@
     </div>
 </div>
 
+<!-- Modal chi tiết hóa đơn -->
 <div class="modal-overlay" id="modal">
-    <div class="modal" style="width:560px">
+    <div class="modal" style="width:580px">
         <div class="modal-header">
-            <div class="modal-title">Chi tiết hóa đơn #<span id="detail-id"></span></div>
+            <div class="modal-title">
+                Chi tiết hóa đơn&nbsp;<span class="code-chip" id="detail-id"></span>
+            </div>
             <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
         <div class="modal-body">
             <div class="table-wrap">
                 <table>
                     <thead>
-                    <tr><th>Sản phẩm</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th></tr>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th style="text-align:right">Đơn giá</th>
+                            <th style="text-align:center">SL</th>
+                            <th style="text-align:right">Thành tiền</th>
+                        </tr>
                     </thead>
                     <tbody id="detail-table"></tbody>
                 </table>
             </div>
-            <div style="margin-top:16px;text-align:right">
-                <div id="detail-total" style="font-size:16px;font-weight:700;color:var(--primary)"></div>
+            <div style="margin-top:16px;text-align:right;padding:12px 16px;background:var(--primary-light);border-radius:var(--radius-md);border:1px solid var(--primary-200)">
+                <div id="detail-total" style="font-size:17px;font-weight:800;color:var(--primary)"></div>
             </div>
         </div>
         <div class="modal-footer">
@@ -97,6 +124,18 @@
     requireAuth();
     buildSidebar();
     initUser();
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+
+    const paymentLabel = { CASH: 'Tiền mặt', CARD: 'Thẻ', TRANSFER: 'Chuyển khoản' };
+    const paymentBadge = { CASH: 'badge-info', CARD: 'badge-purple', TRANSFER: 'badge-warning' };
 
     async function init() {
         const branches = await api.get('/branches') || [];
@@ -117,41 +156,52 @@
     async function loadOrders() {
         const branchId = document.getElementById('branch-filter').value;
         if (!branchId) return;
-        const orders = await api.get(`/orders/branch/${branchId}`) || [];
+
         const tbody = document.getElementById('orders-table');
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="icon">⏳</span><p>Đang tải...</p></div></td></tr>`;
+
+        const orders = await api.get(`/orders/branch/${branchId}`) || [];
+        const countEl = document.getElementById('orders-count');
+        countEl.textContent = orders.length ? `${orders.length} hóa đơn` : '';
+
         if (!orders.length) {
-            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📭</div><p>Chưa có hóa đơn</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Chưa có hóa đơn</div><p>Chi nhánh này chưa có giao dịch nào.</p></div></td></tr>`;
             return;
         }
-        tbody.innerHTML = orders.map(o => `
-            <tr>
-                <td>#${o.orderId}</td>
+
+        tbody.innerHTML = orders.map(o => {
+            const pm = o.paymentMethod ?? 'CASH';
+            return `<tr>
+                <td><span class="code-chip">#${o.orderId}</span></td>
                 <td>${o.branch?.branchName ?? '—'}</td>
                 <td>${o.user?.fullName ?? o.user?.username ?? '—'}</td>
-                <td><strong>${Number(o.totalAmount).toLocaleString('vi-VN')}đ</strong></td>
-                <td>${Number(o.discount ?? 0).toLocaleString('vi-VN')}đ</td>
-                <td><span class="badge badge-info">${o.paymentMethod ?? 'CASH'}</span></td>
-                <td>${new Date(o.createdAt).toLocaleString('vi-VN')}</td>
-                <td><button class="btn btn-outline btn-sm" onclick="viewDetail(${o.orderId})">👁️ Xem</button></td>
-            </tr>
-        `).join('');
+                <td><strong style="color:var(--primary)">${Number(o.totalAmount).toLocaleString('vi-VN')}đ</strong></td>
+                <td style="color:var(--text-muted)">${Number(o.discount ?? 0).toLocaleString('vi-VN')}đ</td>
+                <td><span class="badge ${paymentBadge[pm] ?? 'badge-info'} badge-flat">${paymentLabel[pm] ?? pm}</span></td>
+                <td style="color:var(--text-muted);font-size:12.5px">${new Date(o.createdAt).toLocaleString('vi-VN')}</td>
+                <td><button class="btn btn-outline btn-sm" onclick="viewDetail(${o.orderId})">👁 Chi tiết</button></td>
+            </tr>`;
+        }).join('');
     }
 
     async function viewDetail(orderId) {
         const details = await api.get(`/orders/${orderId}/details`) || [];
-        document.getElementById('detail-id').textContent = orderId;
+        document.getElementById('detail-id').textContent = '#' + orderId;
+
         let total = 0;
         document.getElementById('detail-table').innerHTML = details.map(d => {
             const sub = d.quantity * d.unitPrice;
             total += sub;
             return `<tr>
-                <td>${d.product?.productName ?? d.productName ?? '—'}</td>
-                <td>${Number(d.unitPrice).toLocaleString('vi-VN')}đ</td>
-                <td>${d.quantity}</td>
-                <td><strong>${Number(sub).toLocaleString('vi-VN')}đ</strong></td>
+                <td><strong>${d.product?.productName ?? d.productName ?? '—'}</strong></td>
+                <td style="text-align:right;color:var(--text-muted)">${Number(d.unitPrice).toLocaleString('vi-VN')}đ</td>
+                <td style="text-align:center"><span class="badge badge-gray badge-flat">×${d.quantity}</span></td>
+                <td style="text-align:right"><strong style="color:var(--primary)">${Number(sub).toLocaleString('vi-VN')}đ</strong></td>
             </tr>`;
         }).join('');
-        document.getElementById('detail-total').textContent = `Tổng: ${Number(total).toLocaleString('vi-VN')}đ`;
+
+        document.getElementById('detail-total').textContent =
+            `Tổng cộng: ${Number(total).toLocaleString('vi-VN')}đ`;
         document.getElementById('modal').classList.add('open');
     }
 

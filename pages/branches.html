@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Chi nhánh</title>
-    <link rel="stylesheet" href="../css/style.css?v=5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="../css/style.css?v=6">
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">🍎</div>
             <span>MiniFruit</span>
+            <span class="logo-badge">v6</span>
         </div>
         <nav class="sidebar-nav" id="sidebar-nav"></nav>
         <div class="sidebar-footer">
@@ -28,29 +32,44 @@
 
     <div class="main-content">
         <div class="topbar">
-            <div class="topbar-title">Chi nhánh</div>
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">Chi nhánh</div>
+            </div>
             <div class="topbar-actions">
                 <button class="btn btn-primary" onclick="openModal()">+ Thêm chi nhánh</button>
             </div>
         </div>
+
         <div class="page-content">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">Danh sách chi nhánh</div>
+                    <div class="card-title">
+                        <span class="card-icon">🏪</span>
+                        Danh sách chi nhánh
+                    </div>
+                    <span id="branch-count" style="font-size:12.5px;color:var(--text-muted)"></span>
                 </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Tên chi nhánh</th>
-                            <th>Địa chỉ</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Tên chi nhánh</th>
+                                <th>Địa chỉ</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
                         </thead>
                         <tbody id="branches-table">
-                        <tr><td colspan="5"><div class="empty-state"><div class="icon">⏳</div><p>Đang tải...</p></div></td></tr>
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <span class="icon">⏳</span>
+                                        <p>Đang tải...</p>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -59,6 +78,7 @@
     </div>
 </div>
 
+<!-- Modal thêm/sửa chi nhánh -->
 <div class="modal-overlay" id="modal">
     <div class="modal">
         <div class="modal-header">
@@ -68,17 +88,17 @@
         <div class="modal-body">
             <input type="hidden" id="branch-id">
             <div class="form-group">
-                <label class="form-label">Tên chi nhánh *</label>
+                <label class="form-label">Tên chi nhánh <span style="color:var(--danger)">*</span></label>
                 <input class="form-control" id="branch-name" placeholder="VD: Chi nhánh Quận 1">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-bottom:0">
                 <label class="form-label">Địa chỉ</label>
-                <input class="form-control" id="branch-address" placeholder="Địa chỉ chi nhánh">
+                <input class="form-control" id="branch-address" placeholder="Số nhà, đường, quận, thành phố">
             </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
-            <button class="btn btn-primary" onclick="saveBranch()">Lưu</button>
+            <button class="btn btn-primary" onclick="saveBranch()">Lưu chi nhánh</button>
         </div>
     </div>
 </div>
@@ -92,6 +112,15 @@
     buildSidebar();
     initUser();
 
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+
     let allBranches = [];
 
     function toast(msg, type = 'success') {
@@ -100,25 +129,43 @@
         t.className = `toast ${type}`;
         t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
         c.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
+        setTimeout(() => t.remove(), 3200);
     }
 
     async function loadBranches() {
         allBranches = await api.get('/branches') || [];
         const tbody = document.getElementById('branches-table');
+        const countEl = document.getElementById('branch-count');
+
         if (!allBranches.length) {
-            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📭</div><p>Chưa có chi nhánh nào</p></div></td></tr>`;
+            countEl.textContent = '';
+            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Chưa có chi nhánh</div><p>Hãy thêm chi nhánh đầu tiên cho hệ thống.</p></div></td></tr>`;
             return;
         }
+
+        countEl.textContent = `${allBranches.length} chi nhánh`;
         tbody.innerHTML = allBranches.map(b => `
             <tr>
-                <td>${b.branchId}</td>
-                <td><strong>${b.branchName}</strong></td>
-                <td>${b.address ?? '—'}</td>
-                <td><span class="badge ${b.status ? 'badge-success' : 'badge-danger'}">${b.status ? 'Hoạt động' : 'Ngừng'}</span></td>
+                <td><span class="code-chip">#${b.branchId}</span></td>
                 <td>
-                    <button class="btn btn-outline btn-sm" onclick="editBranch(${b.branchId})">✏️ Sửa</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteBranch(${b.branchId})">🗑️</button>
+                    <strong>${b.branchName}</strong>
+                </td>
+                <td style="color:var(--text-muted)">
+                    ${b.address
+                        ? `<span style="display:flex;align-items:center;gap:5px"><span style="opacity:.5">📍</span>${b.address}</span>`
+                        : '<span style="color:var(--text-light)">—</span>'
+                    }
+                </td>
+                <td>
+                    <span class="badge ${b.status ? 'badge-success' : 'badge-danger'}">
+                        ${b.status ? 'Hoạt động' : 'Ngừng'}
+                    </span>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px">
+                        <button class="btn btn-outline btn-sm" onclick="editBranch(${b.branchId})">✏️ Sửa</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteBranch(${b.branchId})">🗑️</button>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -127,8 +174,8 @@
     function openModal(reset = true) {
         if (reset) {
             document.getElementById('modal-title').textContent = 'Thêm chi nhánh';
-            document.getElementById('branch-id').value = '';
-            document.getElementById('branch-name').value = '';
+            document.getElementById('branch-id').value      = '';
+            document.getElementById('branch-name').value    = '';
             document.getElementById('branch-address').value = '';
         }
         document.getElementById('modal').classList.add('open');
@@ -141,10 +188,10 @@
     function editBranch(id) {
         const b = allBranches.find(x => x.branchId === id);
         if (!b) return;
-        document.getElementById('modal-title').textContent = 'Sửa chi nhánh';
-        document.getElementById('branch-id').value = b.branchId;
-        document.getElementById('branch-name').value = b.branchName;
-        document.getElementById('branch-address').value = b.address || '';
+        document.getElementById('modal-title').textContent   = 'Sửa chi nhánh';
+        document.getElementById('branch-id').value           = b.branchId;
+        document.getElementById('branch-name').value         = b.branchName;
+        document.getElementById('branch-address').value      = b.address || '';
         openModal(false);
     }
 
@@ -152,16 +199,16 @@
         const id = document.getElementById('branch-id').value;
         const body = {
             branchName: document.getElementById('branch-name').value,
-            address: document.getElementById('branch-address').value,
-            status: true
+            address:    document.getElementById('branch-address').value,
+            status:     true
         };
         if (!body.branchName) { toast('Vui lòng nhập tên chi nhánh', 'error'); return; }
         if (id) {
             await api.put(`/branches/${id}`, body);
-            toast('Đã cập nhật chi nhánh');
+            toast('Đã cập nhật chi nhánh thành công');
         } else {
             await api.post('/branches', body);
-            toast('Đã thêm chi nhánh');
+            toast('Đã thêm chi nhánh thành công');
         }
         closeModal();
         loadBranches();

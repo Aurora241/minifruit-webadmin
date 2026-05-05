@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Sản phẩm</title>
-    <link rel="stylesheet" href="../css/style.css?v=5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="../css/style.css?v=6">
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">🍎</div>
             <span>MiniFruit</span>
+            <span class="logo-badge">v6</span>
         </div>
         <nav class="sidebar-nav" id="sidebar-nav"></nav>
         <div class="sidebar-footer">
@@ -28,35 +32,51 @@
 
     <div class="main-content">
         <div class="topbar">
-            <div class="topbar-title">Sản phẩm</div>
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">Sản phẩm</div>
+            </div>
             <div class="topbar-actions">
                 <button class="btn btn-primary" onclick="openModal()">+ Thêm sản phẩm</button>
             </div>
         </div>
+
         <div class="page-content">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">Danh sách sản phẩm</div>
-                    <div class="search-bar">
-                        <span>🔍</span>
-                        <input type="text" id="search" placeholder="Tìm sản phẩm..." oninput="filterProducts()">
+                    <div class="card-title">
+                        <span class="card-icon">🛒</span>
+                        Danh sách sản phẩm
+                    </div>
+                    <div class="toolbar">
+                        <div class="search-bar">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="search" placeholder="Tìm theo tên, SKU..." oninput="filterProducts()">
+                        </div>
                     </div>
                 </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                        <tr>
-                            <th>SKU</th>
-                            <th>Tên sản phẩm</th>
-                            <th>Danh mục</th>
-                            <th>Giá nhập</th>
-                            <th>Giá bán</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
-                        </tr>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Danh mục</th>
+                                <th>Giá nhập</th>
+                                <th>Giá bán</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
                         </thead>
                         <tbody id="products-table">
-                        <tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Đang tải...</p></div></td></tr>
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <span class="icon">⏳</span>
+                                        <p>Đang tải...</p>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -65,6 +85,7 @@
     </div>
 </div>
 
+<!-- Modal thêm/sửa sản phẩm -->
 <div class="modal-overlay" id="modal">
     <div class="modal">
         <div class="modal-header">
@@ -75,7 +96,7 @@
             <input type="hidden" id="product-id">
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">SKU *</label>
+                    <label class="form-label">SKU <span style="color:var(--danger)">*</span></label>
                     <input class="form-control" id="sku" placeholder="VD: SP001">
                 </div>
                 <div class="form-group">
@@ -84,7 +105,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Tên sản phẩm *</label>
+                <label class="form-label">Tên sản phẩm <span style="color:var(--danger)">*</span></label>
                 <input class="form-control" id="product-name" placeholder="Tên sản phẩm">
             </div>
             <div class="form-group">
@@ -94,19 +115,19 @@
                 </select>
             </div>
             <div class="form-grid">
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">Giá nhập (đ)</label>
-                    <input class="form-control" type="number" id="cost-price" placeholder="0">
+                    <input class="form-control" type="number" id="cost-price" placeholder="0" min="0">
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">Giá bán (đ)</label>
-                    <input class="form-control" type="number" id="selling-price" placeholder="0">
+                    <input class="form-control" type="number" id="selling-price" placeholder="0" min="0">
                 </div>
             </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
-            <button class="btn btn-primary" onclick="saveProduct()">Lưu</button>
+            <button class="btn btn-primary" onclick="saveProduct()">Lưu sản phẩm</button>
         </div>
     </div>
 </div>
@@ -120,6 +141,15 @@
     buildSidebar();
     initUser();
 
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+
     let allProducts = [];
 
     function toast(msg, type = 'success') {
@@ -128,7 +158,7 @@
         t.className = `toast ${type}`;
         t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
         c.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
+        setTimeout(() => t.remove(), 3200);
     }
 
     async function loadProducts() {
@@ -137,31 +167,45 @@
             api.get('/categories')
         ]);
         allProducts = products || [];
+
         const sel = document.getElementById('category-id');
         sel.innerHTML = '<option value="">-- Chọn danh mục --</option>';
         (categories || []).forEach(c => {
             sel.innerHTML += `<option value="${c.categoryId}">${c.categoryName}</option>`;
         });
+
         renderTable(allProducts);
     }
 
     function renderTable(data) {
         const tbody = document.getElementById('products-table');
         if (!data.length) {
-            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><p>Chưa có sản phẩm nào</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Không tìm thấy sản phẩm</div><p>Hãy thêm sản phẩm mới hoặc điều chỉnh từ khóa tìm kiếm.</p></div></td></tr>`;
             return;
         }
         tbody.innerHTML = data.map(p => `
             <tr>
-                <td><code>${p.sku}</code></td>
-                <td><strong>${p.productName}</strong></td>
-                <td>${p.category?.categoryName ?? '—'}</td>
-                <td>${Number(p.costPrice).toLocaleString('vi-VN')}đ</td>
-                <td><strong>${Number(p.sellingPrice).toLocaleString('vi-VN')}đ</strong></td>
-                <td><span class="badge ${p.status ? 'badge-success' : 'badge-danger'}">${p.status ? 'Hoạt động' : 'Ngừng'}</span></td>
+                <td><span class="code-chip">${p.sku}</span></td>
                 <td>
-                    <button class="btn btn-outline btn-sm" onclick="editProduct(${p.productId})">✏️ Sửa</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.productId})">🗑️</button>
+                    <strong>${p.productName}</strong>
+                    ${p.barcode ? `<div style="font-size:11.5px;color:var(--text-light);margin-top:2px">${p.barcode}</div>` : ''}
+                </td>
+                <td>${p.category?.categoryName
+                    ? `<span class="badge badge-gray badge-flat">${p.category.categoryName}</span>`
+                    : '<span style="color:var(--text-light)">—</span>'
+                }</td>
+                <td style="color:var(--text-muted)">${Number(p.costPrice).toLocaleString('vi-VN')}đ</td>
+                <td><strong style="color:var(--primary)">${Number(p.sellingPrice).toLocaleString('vi-VN')}đ</strong></td>
+                <td>
+                    <span class="badge ${p.status ? 'badge-success' : 'badge-danger'}">
+                        ${p.status ? 'Hoạt động' : 'Ngừng'}
+                    </span>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px">
+                        <button class="btn btn-outline btn-sm" onclick="editProduct(${p.productId})">✏️ Sửa</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.productId})">🗑️</button>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -193,33 +237,36 @@
         const p = allProducts.find(x => x.productId === id);
         if (!p) return;
         document.getElementById('modal-title').textContent = 'Sửa sản phẩm';
-        document.getElementById('product-id').value = p.productId;
-        document.getElementById('sku').value = p.sku;
-        document.getElementById('barcode').value = p.barcode || '';
-        document.getElementById('product-name').value = p.productName;
-        document.getElementById('cost-price').value = p.costPrice;
-        document.getElementById('selling-price').value = p.sellingPrice;
-        document.getElementById('category-id').value = p.category?.categoryId || '';
+        document.getElementById('product-id').value      = p.productId;
+        document.getElementById('sku').value             = p.sku;
+        document.getElementById('barcode').value         = p.barcode || '';
+        document.getElementById('product-name').value    = p.productName;
+        document.getElementById('cost-price').value      = p.costPrice;
+        document.getElementById('selling-price').value   = p.sellingPrice;
+        document.getElementById('category-id').value     = p.category?.categoryId || '';
         openModal(false);
     }
 
     async function saveProduct() {
         const id = document.getElementById('product-id').value;
         const body = {
-            sku: document.getElementById('sku').value,
-            barcode: document.getElementById('barcode').value,
-            productName: document.getElementById('product-name').value,
-            costPrice: document.getElementById('cost-price').value,
+            sku:          document.getElementById('sku').value,
+            barcode:      document.getElementById('barcode').value,
+            productName:  document.getElementById('product-name').value,
+            costPrice:    document.getElementById('cost-price').value,
             sellingPrice: document.getElementById('selling-price').value,
-            categoryId: document.getElementById('category-id').value || null,
+            categoryId:   document.getElementById('category-id').value || null,
         };
-        if (!body.sku || !body.productName) { toast('Vui lòng nhập SKU và tên sản phẩm', 'error'); return; }
+        if (!body.sku || !body.productName) {
+            toast('Vui lòng nhập SKU và tên sản phẩm', 'error');
+            return;
+        }
         if (id) {
             await api.put(`/products/${id}`, body);
-            toast('Đã cập nhật sản phẩm');
+            toast('Đã cập nhật sản phẩm thành công');
         } else {
             await api.post('/products', body);
-            toast('Đã thêm sản phẩm');
+            toast('Đã thêm sản phẩm thành công');
         }
         closeModal();
         loadProducts();

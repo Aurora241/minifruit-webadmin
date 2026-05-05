@@ -4,36 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Đăng nhập</title>
-    <link rel="stylesheet" href="css/style.css?v=5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 <div class="login-page">
+    <!-- Animated background blobs -->
+    <div class="login-blob"></div>
+    <div class="login-blob"></div>
+    <div class="login-blob"></div>
+
     <div class="login-card">
         <div class="login-logo">
             <div class="icon">🍎</div>
             <h1>MiniFruit</h1>
-            <p>Hệ thống quản lý kho & bán hàng</p>
+            <p>Hệ thống quản lý kho &amp; bán hàng</p>
         </div>
+
         <div class="alert alert-danger" id="error-msg"></div>
+
         <div class="form-group">
             <label class="form-label">Tên đăng nhập</label>
-            <input class="form-control" type="text" id="username" placeholder="Nhập tên đăng nhập">
+            <div class="input-group">
+                <span class="input-icon">👤</span>
+                <input class="form-control" type="text" id="username" placeholder="Nhập tên đăng nhập" autocomplete="username">
+            </div>
         </div>
-        <div class="form-group">
+
+        <div class="form-group" style="margin-bottom:22px">
             <label class="form-label">Mật khẩu</label>
-            <input class="form-control" type="password" id="password" placeholder="Nhập mật khẩu">
+            <div class="password-wrapper">
+                <input class="form-control" type="password" id="password" placeholder="Nhập mật khẩu" autocomplete="current-password" style="padding-right:42px">
+                <button class="btn-pw-toggle" type="button" onclick="togglePassword()" id="pw-toggle" title="Hiện/ẩn mật khẩu">👁</button>
+            </div>
         </div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px"
-                id="btn-login" onclick="doLogin()">
+
+        <button class="btn btn-primary" style="width:100%" id="btn-login" onclick="doLogin()">
             Đăng nhập
         </button>
+
+        <div class="login-footer">
+            MiniFruit Admin v6 &nbsp;·&nbsp; © 2026
+        </div>
     </div>
 </div>
+
 <script src="js/auth.js?v=5"></script>
 <script>
-    // Thêm dòng này vào đầu script của index.html
     localStorage.setItem('loginUrl', window.location.href);
     if (localStorage.getItem('token')) window.location.href = 'dashboard.html';
+
+    function togglePassword() {
+        const pw = document.getElementById('password');
+        const btn = document.getElementById('pw-toggle');
+        if (pw.type === 'password') {
+            pw.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            pw.type = 'password';
+            btn.textContent = '👁';
+        }
+    }
 
     async function doLogin() {
         const btn = document.getElementById('btn-login');
@@ -41,9 +72,12 @@
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
 
+        err.classList.remove('show');
+
         if (!username || !password) {
             err.textContent = 'Vui lòng nhập đầy đủ thông tin';
-            err.classList.add('show'); return;
+            err.classList.add('show');
+            return;
         }
 
         btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
@@ -60,11 +94,11 @@
                 saveAuth(data);
                 window.location.href = 'dashboard.html';
             } else {
-                err.textContent = data || 'Sai tên đăng nhập hoặc mật khẩu';
+                err.textContent = data.message || data || 'Sai tên đăng nhập hoặc mật khẩu';
                 err.classList.add('show');
             }
         } catch (e) {
-            err.textContent = 'Không kết nối được server';
+            err.textContent = 'Không kết nối được máy chủ. Vui lòng thử lại.';
             err.classList.add('show');
         }
 

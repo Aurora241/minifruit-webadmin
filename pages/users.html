@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Người dùng</title>
-    <link rel="stylesheet" href="../css/style.css?v=5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="../css/style.css?v=6">
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">🍎</div>
             <span>MiniFruit</span>
+            <span class="logo-badge">v6</span>
         </div>
         <nav class="sidebar-nav" id="sidebar-nav"></nav>
         <div class="sidebar-footer">
@@ -28,31 +32,46 @@
 
     <div class="main-content">
         <div class="topbar">
-            <div class="topbar-title">Người dùng</div>
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">Người dùng</div>
+            </div>
             <div class="topbar-actions">
                 <button class="btn btn-primary" onclick="openModal()">+ Thêm người dùng</button>
             </div>
         </div>
+
         <div class="page-content">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">Danh sách người dùng</div>
+                    <div class="card-title">
+                        <span class="card-icon">👥</span>
+                        Danh sách người dùng
+                    </div>
+                    <span id="user-count" style="font-size:12.5px;color:var(--text-muted)"></span>
                 </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Tên đăng nhập</th>
-                            <th>Họ tên</th>
-                            <th>Vai trò</th>
-                            <th>Chi nhánh</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Người dùng</th>
+                                <th>Họ tên</th>
+                                <th>Vai trò</th>
+                                <th>Chi nhánh</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
                         </thead>
                         <tbody id="users-table">
-                        <tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Đang tải...</p></div></td></tr>
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <span class="icon">⏳</span>
+                                        <p>Đang tải...</p>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -61,6 +80,7 @@
     </div>
 </div>
 
+<!-- Modal thêm người dùng -->
 <div class="modal-overlay" id="modal">
     <div class="modal">
         <div class="modal-header">
@@ -70,12 +90,12 @@
         <div class="modal-body">
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Tên đăng nhập *</label>
-                    <input class="form-control" id="username" placeholder="username">
+                    <label class="form-label">Tên đăng nhập <span style="color:var(--danger)">*</span></label>
+                    <input class="form-control" id="username" placeholder="username" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Mật khẩu *</label>
-                    <input class="form-control" type="password" id="password" placeholder="••••••">
+                    <label class="form-label">Mật khẩu <span style="color:var(--danger)">*</span></label>
+                    <input class="form-control" type="password" id="password" placeholder="••••••" autocomplete="new-password">
                 </div>
             </div>
             <div class="form-group">
@@ -83,8 +103,8 @@
                 <input class="form-control" id="full-name" placeholder="Nguyễn Văn A">
             </div>
             <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Vai trò *</label>
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Vai trò <span style="color:var(--danger)">*</span></label>
                     <select class="form-control" id="role">
                         <option value="STAFF">STAFF — Nhân viên bán hàng</option>
                         <option value="WAREHOUSE">WAREHOUSE — Thủ kho</option>
@@ -92,7 +112,7 @@
                         <option value="ADMIN">ADMIN — Quản trị hệ thống</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">Chi nhánh</label>
                     <select class="form-control" id="branch-id">
                         <option value="">-- Không gán --</option>
@@ -102,7 +122,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
-            <button class="btn btn-primary" onclick="saveUser()">Lưu</button>
+            <button class="btn btn-primary" onclick="saveUser()">Tạo tài khoản</button>
         </div>
     </div>
 </div>
@@ -116,9 +136,29 @@
     buildSidebar();
     initUser();
 
-    const roleColors = {
-        ADMIN: 'badge-danger', MANAGER: 'badge-warning',
-        STAFF: 'badge-info', WAREHOUSE: 'badge-success'
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+
+    // Role badge config
+    const roleConfig = {
+        ADMIN:     { badge: 'badge-danger',  label: 'Admin',     icon: '👑' },
+        MANAGER:   { badge: 'badge-warning', label: 'Quản lý',   icon: '🏆' },
+        WAREHOUSE: { badge: 'badge-success', label: 'Thủ kho',   icon: '📦' },
+        STAFF:     { badge: 'badge-info',    label: 'Nhân viên', icon: '🧑‍💼' },
+    };
+
+    // Avatar color per role
+    const avatarColors = {
+        ADMIN:     'linear-gradient(135deg,#ef4444,#dc2626)',
+        MANAGER:   'linear-gradient(135deg,#f59e0b,#d97706)',
+        WAREHOUSE: 'linear-gradient(135deg,#22c55e,#16a34a)',
+        STAFF:     'linear-gradient(135deg,#3b82f6,#2563eb)',
     };
 
     function toast(msg, type = 'success') {
@@ -127,7 +167,7 @@
         t.className = `toast ${type}`;
         t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
         c.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
+        setTimeout(() => t.remove(), 3200);
     }
 
     async function init() {
@@ -135,29 +175,66 @@
             api.get('/users'),
             api.get('/branches')
         ]);
+
+        // Populate branch select
         const sel = document.getElementById('branch-id');
         (branches || []).forEach(b => {
             sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
         });
-        const tbody = document.getElementById('users-table');
+
+        const tbody   = document.getElementById('users-table');
+        const countEl = document.getElementById('user-count');
+
         if (!users?.length) {
-            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><p>Chưa có người dùng</p></div></td></tr>`;
+            countEl.textContent = '';
+            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Chưa có người dùng</div><p>Hãy thêm tài khoản đầu tiên.</p></div></td></tr>`;
             return;
         }
-        tbody.innerHTML = users.map(u => `
-            <tr>
-                <td>${u.userId}</td>
-                <td><strong>${u.username}</strong></td>
-                <td>${u.fullName ?? '—'}</td>
-                <td><span class="badge ${roleColors[u.role?.roleName] ?? 'badge-info'}">${u.role?.roleName ?? '—'}</span></td>
-                <td>${u.branch?.branchName ?? '—'}</td>
-                <td><span class="badge ${u.status ? 'badge-success' : 'badge-danger'}">${u.status ? 'Hoạt động' : 'Ngừng'}</span></td>
-                <td><button class="btn btn-danger btn-sm" onclick="deactivateUser(${u.userId})">🚫 Vô hiệu</button></td>
-            </tr>
-        `).join('');
+
+        countEl.textContent = `${users.length} tài khoản`;
+        tbody.innerHTML = users.map(u => {
+            const roleName = u.role?.roleName ?? u.role ?? '—';
+            const cfg      = roleConfig[roleName] ?? { badge: 'badge-gray', label: roleName, icon: '👤' };
+            const bgColor  = avatarColors[roleName] ?? 'linear-gradient(135deg,#94a3b8,#64748b)';
+            const initials = (u.fullName || u.username || 'U')[0].toUpperCase();
+
+            return `<tr>
+                <td><span class="code-chip">#${u.userId}</span></td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:9px">
+                        <div style="width:30px;height:30px;border-radius:8px;background:${bgColor};
+                                    display:flex;align-items:center;justify-content:center;
+                                    color:#fff;font-weight:700;font-size:12px;flex-shrink:0">
+                            ${initials}
+                        </div>
+                        <strong>${u.username}</strong>
+                    </div>
+                </td>
+                <td>${u.fullName ?? '<span style="color:var(--text-light)">—</span>'}</td>
+                <td>
+                    <span class="badge ${cfg.badge} badge-flat">
+                        ${cfg.icon} ${cfg.label}
+                    </span>
+                </td>
+                <td>${u.branch?.branchName
+                    ? `<span class="badge badge-gray badge-flat">🏪 ${u.branch.branchName}</span>`
+                    : '<span style="color:var(--text-light)">—</span>'
+                }</td>
+                <td>
+                    <span class="badge ${u.status ? 'badge-success' : 'badge-danger'}">
+                        ${u.status ? 'Hoạt động' : 'Ngừng'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deactivateUser(${u.userId})">
+                        🚫 Vô hiệu
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
     }
 
-    function openModal() { document.getElementById('modal').classList.add('open'); }
+    function openModal()  { document.getElementById('modal').classList.add('open'); }
     function closeModal() { document.getElementById('modal').classList.remove('open'); }
 
     async function saveUser() {
@@ -165,12 +242,15 @@
             username: document.getElementById('username').value,
             password: document.getElementById('password').value,
             fullName: document.getElementById('full-name').value,
-            role: document.getElementById('role').value,
+            role:     document.getElementById('role').value,
             branchId: document.getElementById('branch-id').value || null,
         };
-        if (!body.username || !body.password) { toast('Vui lòng nhập tên đăng nhập và mật khẩu', 'error'); return; }
+        if (!body.username || !body.password) {
+            toast('Vui lòng nhập tên đăng nhập và mật khẩu', 'error');
+            return;
+        }
         await api.post('/users', body);
-        toast('Đã thêm người dùng');
+        toast('Đã tạo tài khoản thành công');
         closeModal();
         init();
     }

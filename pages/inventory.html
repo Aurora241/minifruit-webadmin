@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiniFruit — Kho hàng</title>
-    <link rel="stylesheet" href="../css/style.css?v=5">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="../css/style.css?v=6">
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">🍎</div>
             <span>MiniFruit</span>
+            <span class="logo-badge">v6</span>
         </div>
         <nav class="sidebar-nav" id="sidebar-nav"></nav>
         <div class="sidebar-footer">
@@ -28,46 +32,71 @@
 
     <div class="main-content">
         <div class="topbar">
-            <div class="topbar-title">Kho hàng</div>
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">Kho hàng</div>
+            </div>
             <div class="topbar-actions">
-                <select class="form-control" id="branch-filter" onchange="loadStock()" style="width:180px">
+                <select class="form-control" id="branch-filter" onchange="loadStock()" style="width:200px">
                     <option value="">-- Chọn chi nhánh --</option>
                 </select>
                 <button class="btn btn-primary" onclick="openImportModal()">+ Nhập kho</button>
             </div>
         </div>
+
         <div class="page-content">
-            <div id="low-stock-section" style="display:none;margin-bottom:16px">
-                <div class="card" style="border-color:#fca5a5">
-                    <div class="card-header" style="background:#fff5f5">
-                        <div class="card-title">⚠️ Sản phẩm sắp hết hàng</div>
+            <!-- Low stock alert section -->
+            <div id="low-stock-section" style="display:none">
+                <div class="alert-section">
+                    <div class="alert-section-header">
+                        <div class="alert-section-title">⚠️ Sản phẩm sắp hết hàng</div>
+                        <span id="low-stock-count" style="font-size:12px;color:#dc2626;font-weight:600"></span>
                     </div>
                     <div class="table-wrap">
                         <table>
-                            <thead><tr><th>Sản phẩm</th><th>Tồn kho</th><th>Ngưỡng tối thiểu</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Tồn kho</th>
+                                    <th>Ngưỡng tối thiểu</th>
+                                    <th>Mức tồn</th>
+                                </tr>
+                            </thead>
                             <tbody id="low-stock-table"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
+            <!-- Main stock table -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">Tồn kho hiện tại</div>
+                    <div class="card-title">
+                        <span class="card-icon">📦</span>
+                        Tồn kho hiện tại
+                    </div>
+                    <span id="stock-count" style="font-size:12.5px;color:var(--text-muted)"></span>
                 </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                        <tr>
-                            <th>Sản phẩm</th>
-                            <th>SKU</th>
-                            <th>Tồn kho</th>
-                            <th>Ngưỡng tối thiểu</th>
-                            <th>Trạng thái</th>
-                        </tr>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>SKU</th>
+                                <th>Tồn kho / Ngưỡng</th>
+                                <th>Mức tồn</th>
+                                <th>Trạng thái</th>
+                            </tr>
                         </thead>
                         <tbody id="stock-table">
-                        <tr><td colspan="5"><div class="empty-state"><div class="icon">⏳</div><p>Chọn chi nhánh để xem tồn kho</p></div></td></tr>
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <span class="icon">⏳</span>
+                                        <p>Chọn chi nhánh để xem tồn kho</p>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -76,31 +105,37 @@
     </div>
 </div>
 
+<!-- Modal nhập kho -->
 <div class="modal-overlay" id="import-modal">
-    <div class="modal" style="width:540px">
+    <div class="modal" style="width:560px">
         <div class="modal-header">
-            <div class="modal-title">Nhập kho</div>
+            <div class="modal-title">📥 Nhập kho</div>
             <button class="modal-close" onclick="closeImportModal()">✕</button>
         </div>
         <div class="modal-body">
             <div class="form-group">
-                <label class="form-label">Ghi chú</label>
-                <input class="form-control" id="import-note" placeholder="VD: Nhập hàng đầu tháng">
+                <label class="form-label">Ghi chú phiếu nhập</label>
+                <input class="form-control" id="import-note" placeholder="VD: Nhập hàng đầu tháng 5">
+            </div>
+            <div style="font-size:12.5px;font-weight:600;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">
+                Danh sách sản phẩm nhập
             </div>
             <div id="import-items">
-                <div class="import-item" style="display:flex;gap:8px;margin-bottom:8px">
+                <div class="import-item import-row">
                     <select class="form-control" style="flex:2">
                         <option value="">-- Chọn sản phẩm --</option>
                     </select>
-                    <input class="form-control" type="number" placeholder="Số lượng" style="width:90px" min="1">
-                    <button class="btn btn-danger btn-sm" onclick="removeItem(this)">✕</button>
+                    <input class="form-control" type="number" placeholder="Số lượng" style="width:100px" min="1">
+                    <button class="btn btn-danger btn-sm" onclick="removeItem(this)" style="flex-shrink:0">✕</button>
                 </div>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="addImportItem()" style="margin-top:8px">+ Thêm sản phẩm</button>
+            <button class="btn btn-outline btn-sm" onclick="addImportItem()" style="margin-top:10px">
+                + Thêm sản phẩm
+            </button>
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeImportModal()">Hủy</button>
-            <button class="btn btn-primary" onclick="submitImport()">Nhập kho</button>
+            <button class="btn btn-primary" onclick="submitImport()">✅ Xác nhận nhập kho</button>
         </div>
     </div>
 </div>
@@ -114,6 +149,15 @@
     buildSidebar();
     initUser();
 
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+
     let allProducts = [];
 
     function toast(msg, type = 'success') {
@@ -122,7 +166,20 @@
         t.className = `toast ${type}`;
         t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
         c.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
+        setTimeout(() => t.remove(), 3200);
+    }
+
+    // Render a mini progress bar
+    function progressBar(current, min) {
+        const maxStock = Math.max(min * 3, current, 1);
+        const pct = Math.min(100, Math.round((current / maxStock) * 100));
+        const cls = pct <= 25 ? 'danger' : pct <= 50 ? 'warning' : '';
+        return `<div style="display:flex;align-items:center;gap:8px">
+            <div class="progress-bar" style="width:80px">
+                <div class="progress-fill ${cls}" style="width:${pct}%"></div>
+            </div>
+            <span style="font-size:11.5px;color:var(--text-muted);min-width:32px">${pct}%</span>
+        </div>`;
     }
 
     async function init() {
@@ -131,13 +188,13 @@
             api.get('/products')
         ]);
         allProducts = products || [];
+
         const sel = document.getElementById('branch-filter');
         (branches || []).forEach(b => {
             sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
         });
         populateProductSelects();
 
-        // Auto-chọn chi nhánh theo role
         const user = getUser();
         if (user.role === 'MANAGER' && user.branchId) {
             sel.value = user.branchId;
@@ -159,38 +216,64 @@
     async function loadStock() {
         const branchId = document.getElementById('branch-filter').value;
         if (!branchId) return;
+
+        const tbody = document.getElementById('stock-table');
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">⏳</span><p>Đang tải...</p></div></td></tr>`;
+
         const [stock, lowStock] = await Promise.all([
             api.get(`/inventory/stock/${branchId}`),
             api.get(`/inventory/low-stock/${branchId}`)
         ]);
 
-        const tbody = document.getElementById('stock-table');
+        // Render main stock table
+        const stockCountEl = document.getElementById('stock-count');
         if (!stock?.length) {
-            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📭</div><p>Chưa có hàng trong kho</p></div></td></tr>`;
+            stockCountEl.textContent = '';
+            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Kho trống</div><p>Chi nhánh này chưa có hàng trong kho.</p></div></td></tr>`;
         } else {
-            tbody.innerHTML = stock.map(s => `
-                <tr>
+            stockCountEl.textContent = `${stock.length} mặt hàng`;
+            tbody.innerHTML = stock.map(s => {
+                const isLow = s.currentStock <= s.minStock;
+                return `<tr>
                     <td><strong>${s.product?.productName ?? '—'}</strong></td>
-                    <td><code>${s.product?.sku ?? '—'}</code></td>
-                    <td><strong style="color:${s.currentStock <= s.minStock ? 'var(--danger)' : 'var(--primary)'}">${s.currentStock}</strong></td>
-                    <td>${s.minStock}</td>
-                    <td><span class="badge ${s.currentStock <= s.minStock ? 'badge-danger' : 'badge-success'}">
-                        ${s.currentStock <= s.minStock ? '⚠️ Sắp hết' : '✅ Đủ hàng'}
-                    </span></td>
-                </tr>
-            `).join('');
+                    <td><span class="code-chip">${s.product?.sku ?? '—'}</span></td>
+                    <td>
+                        <div class="stock-display">
+                            <div class="stock-nums">
+                                <span class="stock-current" style="color:${isLow ? 'var(--danger)' : 'var(--primary)'}">${s.currentStock}</span>
+                                <span class="stock-slash" style="color:var(--text-light)">/</span>
+                                <span class="stock-min">${s.minStock} tối thiểu</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${progressBar(s.currentStock, s.minStock)}</td>
+                    <td>
+                        <span class="badge ${isLow ? 'badge-danger' : 'badge-success'}">
+                            ${isLow ? '⚠️ Sắp hết' : '✅ Đủ hàng'}
+                        </span>
+                    </td>
+                </tr>`;
+            }).join('');
         }
 
+        // Render low stock alert section
         const section = document.getElementById('low-stock-section');
         if (lowStock?.length > 0) {
             section.style.display = 'block';
-            document.getElementById('low-stock-table').innerHTML = lowStock.map(s => `
-                <tr>
-                    <td>${s.product?.productName ?? '—'}</td>
-                    <td style="color:var(--danger);font-weight:700">${s.currentStock}</td>
+            document.getElementById('low-stock-count').textContent = `${lowStock.length} mặt hàng`;
+            document.getElementById('low-stock-table').innerHTML = lowStock.map(s => {
+                const pct = Math.min(100, Math.round((s.currentStock / Math.max(s.minStock, 1)) * 100));
+                return `<tr>
+                    <td><strong>${s.product?.productName ?? '—'}</strong></td>
+                    <td><strong style="color:var(--danger)">${s.currentStock}</strong></td>
                     <td>${s.minStock}</td>
-                </tr>
-            `).join('');
+                    <td>
+                        <div class="progress-bar" style="width:80px">
+                            <div class="progress-fill danger" style="width:${pct}%"></div>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
         } else {
             section.style.display = 'none';
         }
@@ -207,16 +290,17 @@
     }
 
     function addImportItem() {
-        const opts = allProducts.map(p => `<option value="${p.productId}">${p.productName}</option>`).join('');
+        const opts = allProducts.map(p =>
+            `<option value="${p.productId}">${p.productName}</option>`
+        ).join('');
         const div = document.createElement('div');
-        div.className = 'import-item';
-        div.style = 'display:flex;gap:8px;margin-bottom:8px';
+        div.className = 'import-item import-row';
         div.innerHTML = `
             <select class="form-control" style="flex:2">
                 <option value="">-- Chọn sản phẩm --</option>${opts}
             </select>
-            <input class="form-control" type="number" placeholder="Số lượng" style="width:90px" min="1">
-            <button class="btn btn-danger btn-sm" onclick="removeItem(this)">✕</button>
+            <input class="form-control" type="number" placeholder="Số lượng" style="width:100px" min="1">
+            <button class="btn btn-danger btn-sm" onclick="removeItem(this)" style="flex-shrink:0">✕</button>
         `;
         document.getElementById('import-items').appendChild(div);
     }
@@ -228,12 +312,13 @@
 
     async function submitImport() {
         const branchId = document.getElementById('branch-filter').value;
-        const user = getUser();
         const items = [];
         document.querySelectorAll('.import-item').forEach(row => {
             const productId = row.querySelector('select').value;
-            const quantity = row.querySelector('input').value;
-            if (productId && quantity > 0) items.push({ productId: parseInt(productId), quantity: parseInt(quantity) });
+            const quantity  = row.querySelector('input').value;
+            if (productId && quantity > 0) {
+                items.push({ productId: parseInt(productId), quantity: parseInt(quantity) });
+            }
         });
         if (!items.length) { toast('Vui lòng chọn ít nhất 1 sản phẩm', 'error'); return; }
 
@@ -242,6 +327,7 @@
             note: document.getElementById('import-note').value,
             items
         });
+
         if (result) {
             toast('Nhập kho thành công!');
             closeImportModal();
