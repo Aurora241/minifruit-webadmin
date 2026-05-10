@@ -3,6 +3,7 @@ function saveAuth(data) {
     localStorage.setItem('username', data.username);
     localStorage.setItem('role', data.role);
     localStorage.setItem('branchId', data.branchId);
+    localStorage.setItem('userId', data.userId);
 }
 
 function getUser() {
@@ -10,6 +11,7 @@ function getUser() {
         username: localStorage.getItem('username'),
         role: localStorage.getItem('role'),
         branchId: localStorage.getItem('branchId'),
+        userId: localStorage.getItem('userId'),
     };
 }
 

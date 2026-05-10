@@ -220,7 +220,7 @@
         const tbody = document.getElementById('stock-table');
         tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">⏳</span><p>Đang tải...</p></div></td></tr>`;
 
-        const stock = await api.get(`/inventory/stocks/${branchId}`) || [];
+        const stock = await api.get(`/inventory/stock/${branchId}`) || [];
 
         // Render main stock table
         const stockCountEl = document.getElementById('stock-count');
@@ -310,6 +310,7 @@
 
     async function submitImport() {
         const branchId = document.getElementById('branch-filter').value;
+        const user = getUser();
         const items = [];
         document.querySelectorAll('.import-item').forEach(row => {
             const productId = row.querySelector('select').value;
@@ -322,6 +323,7 @@
 
         const result = await api.post('/inventory/import', {
             branchId: parseInt(branchId),
+            userId: parseInt(user.userId),
             note: document.getElementById('import-note').value,
             items
         });
