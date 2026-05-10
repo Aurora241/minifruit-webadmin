@@ -26,12 +26,16 @@ async function request(method, path, body = null) {
             return;
         }
         if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            console.error(`API ${method} ${path} →`, res.status, err);
+            const text = await res.text().catch(() => '');
+            let err = {};
+            try { err = JSON.parse(text); } catch { err = { message: text }; }
+            console.error(`API ${method} ${path} →`, res.status, err.message ?? text);
             return null;
         }
         if (res.status === 204) return true;
-        return res.json();
+        const text = await res.text();
+        if (!text) return true;
+        try { return JSON.parse(text); } catch { return null; }
     } catch (e) {
         console.error('API Error:', e);
     }
