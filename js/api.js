@@ -25,6 +25,12 @@ async function request(method, path, body = null) {
             window.location.href = getIndexPath();
             return;
         }
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.error(`API ${method} ${path} →`, res.status, err);
+            return null;
+        }
+        if (res.status === 204) return true;
         return res.json();
     } catch (e) {
         console.error('API Error:', e);
