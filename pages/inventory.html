@@ -220,15 +220,12 @@
         const tbody = document.getElementById('stock-table');
         tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">⏳</span><p>Đang tải...</p></div></td></tr>`;
 
-        const [stock, lowStock] = await Promise.all([
-            api.get(`/inventory/stock/${branchId}`),
-            api.get(`/inventory/low-stock/${branchId}`)
-        ]);
+        const stock = await api.get(`/inventory/stocks/${branchId}`) || [];
 
         // Render main stock table
         const stockCountEl = document.getElementById('stock-count');
         if (!stock?.length) {
-            stockCountEl.textContent = '';
+            if (stockCountEl) stockCountEl.textContent = '';
             tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Kho trống</div><p>Chi nhánh này chưa có hàng trong kho.</p></div></td></tr>`;
         } else {
             stockCountEl.textContent = `${stock.length} mặt hàng`;
@@ -256,9 +253,10 @@
             }).join('');
         }
 
-        // Render low stock alert section
+        // Tính low-stock client-side từ dữ liệu stock
+        const lowStock = stock.filter(s => s.currentStock <= s.minStock);
         const section = document.getElementById('low-stock-section');
-        if (lowStock?.length > 0) {
+        if (lowStock.length > 0) {
             section.style.display = 'block';
             document.getElementById('low-stock-count').textContent = `${lowStock.length} mặt hàng`;
             document.getElementById('low-stock-table').innerHTML = lowStock.map(s => {

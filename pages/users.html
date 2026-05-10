@@ -257,7 +257,7 @@
 
     async function deactivateUser(id) {
         if (!confirm('Vô hiệu hóa tài khoản này?')) return;
-        await api.delete(`/users/${id}`);
+        await api.patch(`/users/${id}/status`, { status: false });
         toast('Đã vô hiệu hóa tài khoản');
         init();
     }
