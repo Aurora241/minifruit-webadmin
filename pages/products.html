@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +6,25 @@
     <title>MiniFruit — Sản phẩm</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
     <link rel="stylesheet" href="../css/style.css?v=6">
+    <style>
+        .product-thumb {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--border, #e2e8f0);
+            cursor: pointer;
+        }
+        .product-thumb-placeholder {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            background: var(--bg-alt, #f1f5f9);
+            border: 1.5px dashed var(--border, #cbd5e1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer;
+            transition: background .15s;
+        }
+        .product-thumb-placeholder:hover { background: #e2e8f0; }
+    </style>
 </head>
 <body>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -59,6 +78,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th style="width:52px">Ảnh</th>
                                 <th>SKU</th>
                                 <th>Tên sản phẩm</th>
                                 <th>Danh mục</th>
@@ -70,7 +90,7 @@
                         </thead>
                         <tbody id="products-table">
                             <tr>
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="empty-state">
                                         <span class="icon">⏳</span>
                                         <p>Đang tải...</p>
@@ -132,6 +152,10 @@
     </div>
 </div>
 
+<!-- Input file ẩn dùng để upload ảnh -->
+<input type="file" id="img-input" accept="image/jpeg,image/png,image/webp"
+       style="display:none" onchange="handleImageSelected(event)">
+
 <div class="toast-container" id="toasts"></div>
 
 <script src="../js/auth.js?v=6"></script>
@@ -151,6 +175,7 @@
     }
 
     let allProducts = [];
+    let uploadingProductId = null;
 
     function toast(msg, type = 'success') {
         const c = document.getElementById('toasts');
@@ -180,11 +205,17 @@
     function renderTable(data) {
         const tbody = document.getElementById('products-table');
         if (!data.length) {
-            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Không tìm thấy sản phẩm</div><p>Hãy thêm sản phẩm mới hoặc điều chỉnh từ khóa tìm kiếm.</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Không tìm thấy sản phẩm</div><p>Hãy thêm sản phẩm mới hoặc điều chỉnh từ khóa tìm kiếm.</p></div></td></tr>`;
             return;
         }
-        tbody.innerHTML = data.map(p => `
-            <tr>
+        tbody.innerHTML = data.map(p => {
+            const thumb = p.imageUrl
+                ? `<img class="product-thumb" src="${p.imageUrl}" alt="${p.productName}"
+                        title="Nhấn để đổi ảnh" onclick="triggerUpload(${p.productId})">`
+                : `<div class="product-thumb-placeholder" title="Nhấn để thêm ảnh"
+                        onclick="triggerUpload(${p.productId})">📷</div>`;
+            return `<tr>
+                <td>${thumb}</td>
                 <td><span class="code-chip">${p.sku}</span></td>
                 <td>
                     <strong>${p.productName}</strong>
@@ -207,8 +238,8 @@
                         <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.productId})">🗑️</button>
                     </div>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
     }
 
     function filterProducts() {
@@ -229,21 +260,19 @@
         document.getElementById('modal').classList.add('open');
     }
 
-    function closeModal() {
-        document.getElementById('modal').classList.remove('open');
-    }
+    function closeModal() { document.getElementById('modal').classList.remove('open'); }
 
     function editProduct(id) {
         const p = allProducts.find(x => x.productId === id);
         if (!p) return;
-        document.getElementById('modal-title').textContent = 'Sửa sản phẩm';
-        document.getElementById('product-id').value      = p.productId;
-        document.getElementById('sku').value             = p.sku;
-        document.getElementById('barcode').value         = p.barcode || '';
-        document.getElementById('product-name').value    = p.productName;
-        document.getElementById('cost-price').value      = p.costPrice;
-        document.getElementById('selling-price').value   = p.sellingPrice;
-        document.getElementById('category-id').value     = p.category?.categoryId || '';
+        document.getElementById('modal-title').textContent  = 'Sửa sản phẩm';
+        document.getElementById('product-id').value        = p.productId;
+        document.getElementById('sku').value               = p.sku;
+        document.getElementById('barcode').value           = p.barcode || '';
+        document.getElementById('product-name').value      = p.productName;
+        document.getElementById('cost-price').value        = p.costPrice;
+        document.getElementById('selling-price').value     = p.sellingPrice;
+        document.getElementById('category-id').value       = p.category?.categoryId || '';
         openModal(false);
     }
 
@@ -257,10 +286,7 @@
             sellingPrice: document.getElementById('selling-price').value,
             categoryId:   document.getElementById('category-id').value || null,
         };
-        if (!body.sku || !body.productName) {
-            toast('Vui lòng nhập SKU và tên sản phẩm', 'error');
-            return;
-        }
+        if (!body.sku || !body.productName) { toast('Vui lòng nhập SKU và tên sản phẩm', 'error'); return; }
         if (id) {
             await api.put(`/products/${id}`, body);
             toast('Đã cập nhật sản phẩm thành công');
@@ -277,6 +303,44 @@
         await api.delete(`/products/${id}`);
         toast('Đã xóa sản phẩm');
         loadProducts();
+    }
+
+    // ── Upload ảnh ──
+    function triggerUpload(productId) {
+        uploadingProductId = productId;
+        const input = document.getElementById('img-input');
+        input.value = '';
+        input.click();
+    }
+
+    async function handleImageSelected(event) {
+        const file = event.target.files[0];
+        if (!file || !uploadingProductId) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast('Ảnh không được vượt quá 5MB', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        toast('Đang upload ảnh...');
+        const res = await api.upload(`/products/${uploadingProductId}/image`, formData);
+
+        if (res?.imageUrl) {
+            toast('Upload ảnh thành công!');
+            // Cập nhật local array để render ngay không cần reload toàn bộ
+            const p = allProducts.find(x => x.productId === uploadingProductId);
+            if (p) p.imageUrl = res.imageUrl;
+            renderTable(allProducts.filter(x => {
+                const q = document.getElementById('search').value.toLowerCase();
+                return !q || x.productName.toLowerCase().includes(q) || x.sku.toLowerCase().includes(q);
+            }));
+        } else {
+            toast('Upload ảnh thất bại', 'error');
+        }
+        uploadingProductId = null;
     }
 
     loadProducts();

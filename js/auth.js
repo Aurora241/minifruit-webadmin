@@ -40,6 +40,7 @@ function buildSidebar() {
         { icon: '🛒', label: 'Sản phẩm',     href: base + 'pages/products.html',  roles: ['ADMIN'] },
         { icon: '📦', label: 'Kho hàng',     href: base + 'pages/inventory.html', roles: ['ADMIN','MANAGER','WAREHOUSE'] },
         { icon: '🧾', label: 'Hóa đơn',      href: base + 'pages/orders.html',    roles: ['ADMIN','MANAGER','STAFF'] },
+        { icon: '🕐', label: 'Ca làm việc',  href: base + 'pages/shifts.html',    roles: ['ADMIN','MANAGER'] },
         { icon: '👥', label: 'Người dùng',   href: base + 'pages/users.html',     roles: ['ADMIN'] },
         { icon: '🏪', label: 'Chi nhánh',    href: base + 'pages/branches.html',  roles: ['ADMIN'] },
     ];

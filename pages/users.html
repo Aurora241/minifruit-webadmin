@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -37,7 +37,7 @@
                 <div class="topbar-title">Người dùng</div>
             </div>
             <div class="topbar-actions">
-                <button class="btn btn-primary" onclick="openModal()">+ Thêm người dùng</button>
+                <button class="btn btn-primary" onclick="openCreateModal()">+ Thêm người dùng</button>
             </div>
         </div>
 
@@ -81,31 +81,31 @@
 </div>
 
 <!-- Modal thêm người dùng -->
-<div class="modal-overlay" id="modal">
+<div class="modal-overlay" id="create-modal">
     <div class="modal">
         <div class="modal-header">
-            <div class="modal-title">Thêm người dùng</div>
-            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div class="modal-title">➕ Thêm người dùng</div>
+            <button class="modal-close" onclick="closeModal('create-modal')">✕</button>
         </div>
         <div class="modal-body">
             <div class="form-grid">
                 <div class="form-group">
                     <label class="form-label">Tên đăng nhập <span style="color:var(--danger)">*</span></label>
-                    <input class="form-control" id="username" placeholder="username" autocomplete="off">
+                    <input class="form-control" id="create-username" placeholder="username" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Mật khẩu <span style="color:var(--danger)">*</span></label>
-                    <input class="form-control" type="password" id="password" placeholder="••••••" autocomplete="new-password">
+                    <input class="form-control" type="password" id="create-password" placeholder="••••••" autocomplete="new-password">
                 </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Họ tên</label>
-                <input class="form-control" id="full-name" placeholder="Nguyễn Văn A">
+                <input class="form-control" id="create-fullname" placeholder="Nguyễn Văn A">
             </div>
             <div class="form-grid">
                 <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">Vai trò <span style="color:var(--danger)">*</span></label>
-                    <select class="form-control" id="role">
+                    <select class="form-control" id="create-role">
                         <option value="STAFF">STAFF — Nhân viên bán hàng</option>
                         <option value="WAREHOUSE">WAREHOUSE — Thủ kho</option>
                         <option value="MANAGER">MANAGER — Quản lý chi nhánh</option>
@@ -114,15 +114,86 @@
                 </div>
                 <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">Chi nhánh</label>
-                    <select class="form-control" id="branch-id">
+                    <select class="form-control" id="create-branch">
                         <option value="">-- Không gán --</option>
                     </select>
                 </div>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
-            <button class="btn btn-primary" onclick="saveUser()">Tạo tài khoản</button>
+            <button class="btn btn-outline" onclick="closeModal('create-modal')">Hủy</button>
+            <button class="btn btn-primary" onclick="saveCreate()">Tạo tài khoản</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal sửa người dùng -->
+<div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">✏️ Sửa người dùng</div>
+            <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="edit-user-id">
+            <div class="form-group">
+                <label class="form-label">Tên đăng nhập</label>
+                <input class="form-control" id="edit-username" disabled style="color:var(--text-muted);background:var(--bg-alt,#f8f9fa)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Họ tên</label>
+                <input class="form-control" id="edit-fullname" placeholder="Nguyễn Văn A">
+            </div>
+            <div class="form-grid">
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Vai trò <span style="color:var(--danger)">*</span></label>
+                    <select class="form-control" id="edit-role">
+                        <option value="STAFF">STAFF — Nhân viên bán hàng</option>
+                        <option value="WAREHOUSE">WAREHOUSE — Thủ kho</option>
+                        <option value="MANAGER">MANAGER — Quản lý chi nhánh</option>
+                        <option value="ADMIN">ADMIN — Quản trị hệ thống</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Chi nhánh</label>
+                    <select class="form-control" id="edit-branch">
+                        <option value="">-- Không gán --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('edit-modal')">Hủy</button>
+            <button class="btn btn-primary" onclick="saveEdit()">Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal đổi mật khẩu -->
+<div class="modal-overlay" id="pwd-modal">
+    <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+            <div class="modal-title">🔑 Đổi mật khẩu</div>
+            <button class="modal-close" onclick="closeModal('pwd-modal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="pwd-user-id">
+            <div class="form-group" style="margin-bottom:6px">
+                <label class="form-label" style="font-size:12px;color:var(--text-muted)">Tài khoản</label>
+                <div id="pwd-username-display" style="font-weight:600;font-size:14px"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mật khẩu mới <span style="color:var(--danger)">*</span></label>
+                <input class="form-control" type="password" id="pwd-new" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Xác nhận mật khẩu <span style="color:var(--danger)">*</span></label>
+                <input class="form-control" type="password" id="pwd-confirm" placeholder="Nhập lại mật khẩu">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('pwd-modal')">Hủy</button>
+            <button class="btn btn-primary" onclick="savePwd()">Đổi mật khẩu</button>
         </div>
     </div>
 </div>
@@ -145,21 +216,21 @@
         document.getElementById('sidebar-overlay').classList.remove('active');
     }
 
-    // Role badge config
     const roleConfig = {
         ADMIN:     { badge: 'badge-danger',  label: 'Admin',     icon: '👑' },
         MANAGER:   { badge: 'badge-warning', label: 'Quản lý',   icon: '🏆' },
         WAREHOUSE: { badge: 'badge-success', label: 'Thủ kho',   icon: '📦' },
         STAFF:     { badge: 'badge-info',    label: 'Nhân viên', icon: '🧑‍💼' },
     };
-
-    // Avatar color per role
     const avatarColors = {
         ADMIN:     'linear-gradient(135deg,#ef4444,#dc2626)',
         MANAGER:   'linear-gradient(135deg,#f59e0b,#d97706)',
         WAREHOUSE: 'linear-gradient(135deg,#22c55e,#16a34a)',
         STAFF:     'linear-gradient(135deg,#3b82f6,#2563eb)',
     };
+
+    let allUsers    = [];
+    let allBranches = [];
 
     function toast(msg, type = 'success') {
         const c = document.getElementById('toasts');
@@ -170,33 +241,45 @@
         setTimeout(() => t.remove(), 3200);
     }
 
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function populateBranchSelect(selId, selectedId = '') {
+        const sel = document.getElementById(selId);
+        sel.innerHTML = '<option value="">-- Không gán --</option>';
+        allBranches.forEach(b => {
+            sel.innerHTML += `<option value="${b.branchId}" ${String(b.branchId) === String(selectedId) ? 'selected' : ''}>${b.branchName}</option>`;
+        });
+    }
+
     async function init() {
         const [users, branches] = await Promise.all([
             api.get('/users'),
             api.get('/branches')
         ]);
+        allBranches = branches || [];
+        allUsers    = users    || [];
 
-        // Populate branch select
-        const sel = document.getElementById('branch-id');
-        (branches || []).forEach(b => {
-            sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
-        });
+        populateBranchSelect('create-branch');
+        renderTable();
+    }
 
+    function renderTable() {
         const tbody   = document.getElementById('users-table');
         const countEl = document.getElementById('user-count');
 
-        if (!users?.length) {
+        if (!allUsers.length) {
             countEl.textContent = '';
             tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Chưa có người dùng</div><p>Hãy thêm tài khoản đầu tiên.</p></div></td></tr>`;
             return;
         }
 
-        countEl.textContent = `${users.length} tài khoản`;
-        tbody.innerHTML = users.map(u => {
+        countEl.textContent = `${allUsers.length} tài khoản`;
+        tbody.innerHTML = allUsers.map(u => {
             const roleName = u.role?.roleName ?? u.role ?? '—';
             const cfg      = roleConfig[roleName] ?? { badge: 'badge-gray', label: roleName, icon: '👤' };
             const bgColor  = avatarColors[roleName] ?? 'linear-gradient(135deg,#94a3b8,#64748b)';
             const initials = (u.fullName || u.username || 'U')[0].toUpperCase();
+            const isActive = u.status !== false;
 
             return `<tr>
                 <td><span class="code-chip">#${u.userId}</span></td>
@@ -211,55 +294,125 @@
                     </div>
                 </td>
                 <td>${u.fullName ?? '<span style="color:var(--text-light)">—</span>'}</td>
-                <td>
-                    <span class="badge ${cfg.badge} badge-flat">
-                        ${cfg.icon} ${cfg.label}
-                    </span>
-                </td>
+                <td><span class="badge ${cfg.badge} badge-flat">${cfg.icon} ${cfg.label}</span></td>
                 <td>${u.branch?.branchName
                     ? `<span class="badge badge-gray badge-flat">🏪 ${u.branch.branchName}</span>`
                     : '<span style="color:var(--text-light)">—</span>'
                 }</td>
                 <td>
-                    <span class="badge ${u.status ? 'badge-success' : 'badge-danger'}">
-                        ${u.status ? 'Hoạt động' : 'Ngừng'}
+                    <span class="badge ${isActive ? 'badge-success' : 'badge-danger'}">
+                        ${isActive ? 'Hoạt động' : 'Ngừng'}
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-danger btn-sm" onclick="deactivateUser(${u.userId})">
-                        🚫 Vô hiệu
-                    </button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <button class="btn btn-outline btn-sm" onclick="openEditModal(${u.userId})">✏️ Sửa</button>
+                        <button class="btn btn-outline btn-sm" onclick="openPwdModal(${u.userId})">🔑</button>
+                        <button class="btn ${isActive ? 'btn-danger' : 'btn-outline'} btn-sm"
+                                onclick="toggleStatus(${u.userId}, ${isActive})">
+                            ${isActive ? '🚫 Vô hiệu' : '✅ Kích hoạt'}
+                        </button>
+                    </div>
                 </td>
             </tr>`;
         }).join('');
     }
 
-    function openModal()  { document.getElementById('modal').classList.add('open'); }
-    function closeModal() { document.getElementById('modal').classList.remove('open'); }
-
-    async function saveUser() {
-        const body = {
-            username: document.getElementById('username').value,
-            password: document.getElementById('password').value,
-            fullName: document.getElementById('full-name').value,
-            role:     document.getElementById('role').value,
-            branchId: document.getElementById('branch-id').value || null,
-        };
-        if (!body.username || !body.password) {
-            toast('Vui lòng nhập tên đăng nhập và mật khẩu', 'error');
-            return;
-        }
-        await api.post('/users', body);
-        toast('Đã tạo tài khoản thành công');
-        closeModal();
-        init();
+    // ── Thêm người dùng ──
+    function openCreateModal() {
+        ['create-username','create-password','create-fullname'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('create-role').value = 'STAFF';
+        populateBranchSelect('create-branch');
+        document.getElementById('create-modal').classList.add('open');
     }
 
-    async function deactivateUser(id) {
-        if (!confirm('Vô hiệu hóa tài khoản này?')) return;
-        await api.patch(`/users/${id}/status`, { status: false });
-        toast('Đã vô hiệu hóa tài khoản');
-        init();
+    async function saveCreate() {
+        const body = {
+            username: document.getElementById('create-username').value.trim(),
+            password: document.getElementById('create-password').value,
+            fullName: document.getElementById('create-fullname').value.trim(),
+            role:     document.getElementById('create-role').value,
+            branchId: document.getElementById('create-branch').value || null,
+        };
+        if (!body.username || !body.password) { toast('Vui lòng nhập tên đăng nhập và mật khẩu', 'error'); return; }
+        const res = await api.post('/users', body);
+        if (res !== null) {
+            toast('Đã tạo tài khoản thành công');
+            closeModal('create-modal');
+            const [users] = await Promise.all([api.get('/users')]);
+            allUsers = users || [];
+            renderTable();
+        } else {
+            toast('Tạo tài khoản thất bại', 'error');
+        }
+    }
+
+    // ── Sửa người dùng ──
+    function openEditModal(userId) {
+        const u = allUsers.find(x => x.userId === userId);
+        if (!u) return;
+        document.getElementById('edit-user-id').value  = u.userId;
+        document.getElementById('edit-username').value = u.username;
+        document.getElementById('edit-fullname').value = u.fullName ?? '';
+        document.getElementById('edit-role').value     = u.role?.roleName ?? u.role ?? 'STAFF';
+        const branchId = u.branch?.branchId ?? u.branchId ?? '';
+        populateBranchSelect('edit-branch', branchId);
+        document.getElementById('edit-modal').classList.add('open');
+    }
+
+    async function saveEdit() {
+        const id   = document.getElementById('edit-user-id').value;
+        const body = {
+            fullName: document.getElementById('edit-fullname').value.trim(),
+            role:     document.getElementById('edit-role').value,
+            branchId: document.getElementById('edit-branch').value || null,
+        };
+        const res = await api.put(`/users/${id}`, body);
+        if (res !== null) {
+            toast('Đã cập nhật người dùng thành công');
+            closeModal('edit-modal');
+            allUsers = await api.get('/users') || [];
+            renderTable();
+        } else {
+            toast('Cập nhật thất bại', 'error');
+        }
+    }
+
+    // ── Đổi mật khẩu ──
+    function openPwdModal(userId) {
+        const u = allUsers.find(x => x.userId === userId);
+        if (!u) return;
+        document.getElementById('pwd-user-id').value        = u.userId;
+        document.getElementById('pwd-username-display').textContent = `@${u.username}`;
+        document.getElementById('pwd-new').value     = '';
+        document.getElementById('pwd-confirm').value = '';
+        document.getElementById('pwd-modal').classList.add('open');
+    }
+
+    async function savePwd() {
+        const id      = document.getElementById('pwd-user-id').value;
+        const newPwd  = document.getElementById('pwd-new').value;
+        const confirm = document.getElementById('pwd-confirm').value;
+        if (!newPwd) { toast('Vui lòng nhập mật khẩu mới', 'error'); return; }
+        if (newPwd.length < 6) { toast('Mật khẩu tối thiểu 6 ký tự', 'error'); return; }
+        if (newPwd !== confirm) { toast('Mật khẩu xác nhận không khớp', 'error'); return; }
+        const res = await api.put(`/users/${id}`, { password: newPwd });
+        if (res !== null) {
+            toast('Đổi mật khẩu thành công');
+            closeModal('pwd-modal');
+        } else {
+            toast('Đổi mật khẩu thất bại', 'error');
+        }
+    }
+
+    // ── Kích hoạt / Vô hiệu ──
+    async function toggleStatus(userId, isActive) {
+        const action = isActive ? 'Vô hiệu hóa' : 'Kích hoạt';
+        if (!confirm(`${action} tài khoản này?`)) return;
+        await api.patch(`/users/${userId}/status`, { status: !isActive });
+        toast(`Đã ${action.toLowerCase()} tài khoản`);
+        allUsers = await api.get('/users') || [];
+        renderTable();
     }
 
     init();

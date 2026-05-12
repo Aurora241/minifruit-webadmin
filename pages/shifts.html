@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniFruit — Ca làm việc</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍎</text></svg>">
+    <link rel="stylesheet" href="../css/style.css?v=6">
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">🍎</div>
+            <span>MiniFruit</span>
+            <span class="logo-badge">v6</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav"></nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="display-name">Admin</div>
+                    <div class="user-role" id="display-role">ADMIN</div>
+                </div>
+                <button class="btn-logout" onclick="logout()">⏻</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="topbar-title">Ca làm việc</div>
+            </div>
+            <div class="topbar-actions">
+                <select class="form-control" id="branch-filter" onchange="loadShifts()" style="width:200px">
+                    <option value="">-- Chọn chi nhánh --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">🕐</span>
+                        Lịch sử bàn giao ca
+                    </div>
+                    <span id="shift-count" style="font-size:12.5px;color:var(--text-muted)"></span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#Ca</th>
+                                <th>Nhân viên</th>
+                                <th>Chi nhánh</th>
+                                <th>Mở ca</th>
+                                <th>Đóng ca</th>
+                                <th style="text-align:right">Tiền đầu ca</th>
+                                <th style="text-align:right">DT Tiền mặt</th>
+                                <th style="text-align:right">DT Chuyển khoản</th>
+                                <th style="text-align:right">Tổng DT</th>
+                                <th style="text-align:right">Tiền thực tế</th>
+                                <th style="text-align:right">Chênh lệch</th>
+                                <th>Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shifts-table">
+                            <tr>
+                                <td colspan="12">
+                                    <div class="empty-state">
+                                        <span class="icon">⏳</span>
+                                        <p>Chọn chi nhánh để xem lịch sử ca</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="../js/auth.js?v=6"></script>
+<script src="../js/api.js?v=6"></script>
+<script>
+    requireAuth();
+    buildSidebar();
+    initUser();
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+
+    function toast(msg, type = 'success') {
+        const c = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3200);
+    }
+
+    function fmt(n) {
+        return Number(n || 0).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function fmtTime(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        const date = d.toLocaleDateString('vi-VN');
+        const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        return `<span style="font-size:11px;color:var(--text-muted);display:block">${date}</span>${time}`;
+    }
+
+    async function init() {
+        const branches = await api.get('/branches') || [];
+        const sel = document.getElementById('branch-filter');
+        branches.forEach(b => {
+            sel.innerHTML += `<option value="${b.branchId}">${b.branchName}</option>`;
+        });
+
+        const user = getUser();
+        if (user.role === 'MANAGER' && user.branchId) {
+            sel.value = user.branchId;
+            loadShifts();
+        } else if (branches.length > 0) {
+            sel.value = branches[0].branchId;
+            loadShifts();
+        }
+    }
+
+    async function loadShifts() {
+        const branchId = document.getElementById('branch-filter').value;
+        if (!branchId) return;
+
+        const tbody = document.getElementById('shifts-table');
+        tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><span class="icon">⏳</span><p>Đang tải...</p></div></td></tr>`;
+
+        const shifts = await api.get(`/shifts/branch/${branchId}`) || [];
+        const countEl = document.getElementById('shift-count');
+
+        if (!shifts.length) {
+            countEl.textContent = '';
+            tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><span class="icon">📭</span><div class="empty-title">Chưa có ca nào</div><p>Chi nhánh này chưa có lịch sử bàn giao ca.</p></div></td></tr>`;
+            return;
+        }
+
+        countEl.textContent = `${shifts.length} ca`;
+        tbody.innerHTML = shifts.slice().reverse().map(s => {
+            const diff = Number(s.difference || 0);
+            const diffColor = diff < 0 ? 'var(--danger)' : diff > 0 ? '#16a34a' : 'var(--text-muted)';
+            const diffSign  = diff > 0 ? '+' : '';
+            return `<tr>
+                <td><span class="code-chip">#${s.shiftId}</span></td>
+                <td>
+                    <div style="font-weight:600">${s.fullName || s.username || '—'}</div>
+                    ${s.fullName && s.username ? `<div style="font-size:11px;color:var(--text-muted)">@${s.username}</div>` : ''}
+                </td>
+                <td>${s.branchName ? `<span class="badge badge-gray badge-flat">🏪 ${s.branchName}</span>` : '—'}</td>
+                <td>${fmtTime(s.startTime)}</td>
+                <td>${fmtTime(s.endTime)}</td>
+                <td style="text-align:right">${fmt(s.openingCash)}</td>
+                <td style="text-align:right">${fmt(s.cashRevenue)}</td>
+                <td style="text-align:right">${fmt(s.transferRevenue)}</td>
+                <td style="text-align:right"><strong style="color:var(--primary)">${fmt(s.totalRevenue)}</strong></td>
+                <td style="text-align:right">${fmt(s.actualCash)}</td>
+                <td style="text-align:right;font-weight:600;color:${diffColor}">${diffSign}${fmt(diff)}</td>
+                <td style="max-width:160px;white-space:normal;font-size:12px;color:var(--text-muted)">${s.notes || '—'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    init();
+</script>
+</body>
+</html>
